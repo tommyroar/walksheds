@@ -2,19 +2,30 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import Map, { Source, Layer, Popup } from 'react-map-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { themes, defaultThemeId } from './themes'
-import ThemeSwitcher from './ThemeSwitcher'
+import Menu from './Menu'
 import LineLegend from './LineLegend'
 import './App.css'
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
+const WALKSHED_MINUTES = 15
 
 // Seattle center — all themes show the same location
 const SEATTLE_CENTER = [-122.33, 47.60]
 const SEATTLE_ZOOM = 11.5
 
+async function fetchWalkshed(lng, lat, minutes) {
+  const url = `https://api.mapbox.com/isochrone/v1/mapbox/walking/${lng},${lat}`
+    + `?contours_minutes=${minutes}&polygons=true&access_token=${MAPBOX_TOKEN}`
+  const resp = await fetch(url)
+  if (!resp.ok) return null
+  return resp.json()
+}
+
 export default function App() {
   const [themeId, setThemeId] = useState(defaultThemeId)
+  const [darkMode, setDarkMode] = useState(false)
   const [popup, setPopup] = useState(null)
+  const [walkshed, setWalkshed] = useState(null)
   const [line1Data, setLine1Data] = useState(null)
   const [line2Data, setLine2Data] = useState(null)
   const [stationsData, setStationsData] = useState(null)
@@ -34,6 +45,19 @@ export default function App() {
     setMapLoaded(true)
   }, [])
 
+  const mode = darkMode ? 'dark' : 'light'
+  const uiColors = theme.ui[mode]
+  const lightPreset = theme.mapStyle[mode].lightPreset
+
+  // Apply theme config to the map imperatively (react-map-gl doesn't
+  // reactively update the `config` prop on Mapbox Standard styles)
+  useEffect(() => {
+    const map = mapRef.current?.getMap()
+    if (!map || !mapLoaded) return
+    map.setConfigProperty('basemap', 'theme', theme.mapStyle.theme)
+    map.setConfigProperty('basemap', 'lightPreset', lightPreset)
+  }, [themeId, darkMode, mapLoaded, theme.mapStyle.theme, lightPreset])
+
   // Theme switch only changes style, not location
   const handleThemeSwitch = useCallback((newId) => {
     setThemeId(newId)
@@ -45,16 +69,22 @@ export default function App() {
     if (features && features.length > 0) {
       const f = features[0]
       if (f.properties?.name) {
+        const lng = e.lngLat.lng
+        const lat = e.lngLat.lat
         setPopup({
-          longitude: e.lngLat.lng,
-          latitude: e.lngLat.lat,
+          longitude: lng,
+          latitude: lat,
           name: f.properties.name,
           line: f.properties.line,
         })
+        // Fetch walkshed isochrone
+        fetchWalkshed(lng, lat, WALKSHED_MINUTES).then(setWalkshed)
+        return
       }
-    } else {
-      setPopup(null)
     }
+    // Clicked empty space — clear selection
+    setPopup(null)
+    setWalkshed(null)
   }, [])
 
   const handleMouseEnter = useCallback(() => {
@@ -70,7 +100,7 @@ export default function App() {
   const lineColors = themes['sound-transit'].lines
 
   return (
-    <div className="app" style={{ '--ui-bg': theme.ui.bg, '--ui-text': theme.ui.text, '--ui-accent': theme.ui.accent }}>
+    <div className={`app ${darkMode ? 'dark' : 'light'}`} style={{ '--ui-bg': uiColors.bg, '--ui-text': uiColors.text, '--ui-muted': uiColors.muted, '--ui-accent': theme.ui.accent }}>
       <Map
         ref={mapRef}
         initialViewState={{
@@ -90,10 +120,33 @@ export default function App() {
         config={{
           basemap: {
             theme: theme.mapStyle.theme,
-            lightPreset: theme.mapStyle.lightPreset,
+            lightPreset: lightPreset,
           },
         }}
       >
+        {/* Walkshed isochrone */}
+        {mapLoaded && walkshed && (
+          <Source id="walkshed" type="geojson" data={walkshed}>
+            <Layer
+              id="walkshed-fill"
+              type="fill"
+              paint={{
+                'fill-color': lineColors[popup?.line]?.color || '#0054A6',
+                'fill-opacity': 0.2,
+              }}
+            />
+            <Layer
+              id="walkshed-outline"
+              type="line"
+              paint={{
+                'line-color': lineColors[popup?.line]?.color || '#0054A6',
+                'line-width': 2,
+                'line-opacity': 0.6,
+              }}
+            />
+          </Source>
+        )}
+
         {/* Line 1 alignment (SDOT data) */}
         {mapLoaded && line1Data && (
           <Source id="line-1" type="geojson" data={line1Data}>
@@ -185,7 +238,7 @@ export default function App() {
             longitude={popup.longitude}
             latitude={popup.latitude}
             anchor="bottom"
-            onClose={() => setPopup(null)}
+            onClose={() => { setPopup(null); setWalkshed(null) }}
             closeButton={false}
             className="station-popup"
           >
@@ -202,8 +255,13 @@ export default function App() {
         )}
       </Map>
 
-      <ThemeSwitcher activeThemeId={themeId} onSwitch={handleThemeSwitch} />
-      <LineLegend themeId={themeId} />
+      <Menu
+        activeThemeId={themeId}
+        darkMode={darkMode}
+        onThemeSwitch={handleThemeSwitch}
+        onDarkModeToggle={() => setDarkMode(d => !d)}
+      />
+      <LineLegend />
     </div>
   )
 }

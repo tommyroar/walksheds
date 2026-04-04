@@ -1,10 +1,11 @@
 /**
  * Transit agency map styles.
  *
- * Each theme defines a Mapbox Standard style configuration (theme + lightPreset)
+ * Each theme defines a Mapbox Standard style configuration
  * inspired by a real transit agency's visual identity. The map always shows
  * Seattle — these only change the map's look and feel, not the location.
  *
+ * Each theme has `light` and `dark` variants for the map basemap preset.
  * The `lines` property stores the agency's line colors for reference/legend;
  * the actual Seattle rail line colors are always Sound Transit's.
  */
@@ -14,18 +15,19 @@ export const themes = {
     id: 'sound-transit',
     label: 'Sound Transit',
     mapStyle: {
-      theme: 'monochrome',
-      lightPreset: 'dusk',
+      theme: 'default',
+      light: { lightPreset: 'day' },
+      dark: { lightPreset: 'dusk' },
     },
     lines: {
-      '1-line': { color: '#0054A6', label: '1 Line' },
-      '2-line': { color: '#F3901D', label: '2 Line' },
+      '1-line': { color: '#4CAF50', label: '1 Line' },
+      '2-line': { color: '#0082C8', label: '2 Line' },
     },
     ui: {
-      accent: '#0054A6',
-      accentAlt: '#F3901D',
-      bg: '#1a1a2e',
-      text: '#e0e0e0',
+      accent: '#2D2B6B',
+      accentAlt: '#E6007E',
+      light: { bg: 'rgba(255, 255, 255, 0.9)', text: '#2D2B6B', muted: '#666' },
+      dark: { bg: 'rgba(10, 10, 20, 0.85)', text: '#e0e0e0', muted: 'rgba(255,255,255,0.5)' },
     },
   },
 
@@ -34,7 +36,8 @@ export const themes = {
     label: 'TfL',
     mapStyle: {
       theme: 'monochrome',
-      lightPreset: 'night',
+      light: { lightPreset: 'day' },
+      dark: { lightPreset: 'night' },
     },
     lines: {
       bakerloo:           { color: '#B36305', label: 'Bakerloo' },
@@ -53,8 +56,8 @@ export const themes = {
     ui: {
       accent: '#E32017',
       accentAlt: '#003688',
-      bg: '#0a0a1a',
-      text: '#d0d0d0',
+      light: { bg: 'rgba(255, 255, 255, 0.9)', text: '#333', muted: '#666' },
+      dark: { bg: 'rgba(10, 10, 20, 0.85)', text: '#d0d0d0', muted: 'rgba(255,255,255,0.5)' },
     },
   },
 
@@ -63,7 +66,8 @@ export const themes = {
     label: 'MTA',
     mapStyle: {
       theme: 'monochrome',
-      lightPreset: 'dusk',
+      light: { lightPreset: 'day' },
+      dark: { lightPreset: 'dusk' },
     },
     lines: {
       'ace':   { color: '#0039A6', label: 'A C E' },
@@ -80,8 +84,8 @@ export const themes = {
     ui: {
       accent: '#0039A6',
       accentAlt: '#EE352E',
-      bg: '#111118',
-      text: '#d8d8d8',
+      light: { bg: 'rgba(255, 255, 255, 0.9)', text: '#333', muted: '#666' },
+      dark: { bg: 'rgba(10, 10, 20, 0.85)', text: '#d8d8d8', muted: 'rgba(255,255,255,0.5)' },
     },
   },
 
@@ -90,7 +94,8 @@ export const themes = {
     label: 'Tokyo Metro',
     mapStyle: {
       theme: 'monochrome',
-      lightPreset: 'dawn',
+      light: { lightPreset: 'dawn' },
+      dark: { lightPreset: 'night' },
     },
     lines: {
       ginza:      { color: '#FF9500', label: 'Ginza' },
@@ -106,8 +111,8 @@ export const themes = {
     ui: {
       accent: '#F62E36',
       accentAlt: '#009BBF',
-      bg: '#16161e',
-      text: '#d4d4d4',
+      light: { bg: 'rgba(255, 255, 255, 0.9)', text: '#333', muted: '#666' },
+      dark: { bg: 'rgba(10, 10, 20, 0.85)', text: '#d4d4d4', muted: 'rgba(255,255,255,0.5)' },
     },
   },
 }

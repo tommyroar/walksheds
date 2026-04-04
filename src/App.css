@@ -1,3 +1,20 @@
+/* Light/dark chrome variables */
+.app.light {
+  --chrome-bg: rgba(255, 255, 255, 0.85);
+  --chrome-bg-hover: rgba(255, 255, 255, 0.95);
+  --chrome-border: rgba(0, 0, 0, 0.1);
+  --chrome-hover: rgba(0, 0, 0, 0.05);
+  --chrome-active: rgba(0, 0, 0, 0.08);
+}
+
+.app.dark {
+  --chrome-bg: rgba(10, 10, 20, 0.85);
+  --chrome-bg-hover: rgba(10, 10, 20, 0.95);
+  --chrome-border: rgba(255, 255, 255, 0.08);
+  --chrome-hover: rgba(255, 255, 255, 0.06);
+  --chrome-active: rgba(255, 255, 255, 0.1);
+}
+
 .app {
   width: 100%;
   height: 100%;
@@ -5,33 +22,109 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
-/* ── Theme Switcher ── */
+/* ── Hamburger Menu ── */
 
-.theme-switcher {
+.menu {
   position: absolute;
   top: 16px;
   right: 16px;
   z-index: 10;
   display: flex;
-  gap: 6px;
-  background: rgba(10, 10, 20, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  padding: 6px;
+  flex-direction: row-reverse;
+  align-items: flex-start;
+  gap: 0;
 }
 
-.theme-btn {
+.menu-toggle {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--chrome-border);
+  border-radius: 10px;
+  background: var(--chrome-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  cursor: pointer;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.menu-toggle:hover {
+  background: var(--chrome-bg-hover);
+}
+
+.menu-bar {
+  width: 18px;
+  height: 2px;
+  background: var(--ui-text);
+  border-radius: 1px;
+  transition: all 0.25s ease;
+  opacity: 0.7;
+}
+
+/* Hamburger → X animation */
+.menu.open .menu-bar:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+.menu.open .menu-bar:nth-child(2) {
+  opacity: 0;
+}
+.menu.open .menu-bar:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
+/* Panel that expands left from the toggle */
+.menu-panel {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  max-width: 0;
+  opacity: 0;
+  background: var(--chrome-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--chrome-border);
+  border-radius: 10px;
+  margin-right: 8px;
+  transition: max-width 0.3s ease, opacity 0.25s ease, padding 0.3s ease;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.menu.open .menu-panel {
+  max-width: 500px;
+  opacity: 1;
+  padding: 10px 14px;
+}
+
+.menu-section-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ui-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 8px 0;
+}
+
+.menu-theme-list {
+  display: flex;
+  gap: 4px;
+}
+
+.menu-theme-btn {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 8px 12px;
+  padding: 6px 10px;
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: 6px;
   background: transparent;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--ui-muted);
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 11px;
@@ -39,23 +132,23 @@
   letter-spacing: 0.02em;
 }
 
-.theme-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.8);
+.menu-theme-btn:hover {
+  background: var(--chrome-hover);
+  color: var(--ui-text);
 }
 
-.theme-btn.active {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.15);
-  color: #ffffff;
+.menu-theme-btn.active {
+  background: var(--chrome-active);
+  border-color: var(--chrome-border);
+  color: var(--ui-text);
 }
 
-.theme-lines {
+.menu-theme-lines {
   display: flex;
   gap: 3px;
 }
 
-.theme-line {
+.menu-theme-line {
   width: 14px;
   height: 3px;
   border-radius: 1.5px;
@@ -63,12 +156,40 @@
   transition: opacity 0.2s ease;
 }
 
-.theme-btn.active .theme-line {
+.menu-theme-btn.active .menu-theme-line {
   opacity: 1;
 }
 
-.theme-label {
+.menu-theme-label {
   white-space: nowrap;
+}
+
+.menu-divider {
+  width: 1px;
+  height: 32px;
+  background: var(--chrome-border);
+  margin: 0 6px;
+  flex-shrink: 0;
+}
+
+.menu-dark-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ui-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.menu-dark-toggle:hover {
+  background: var(--chrome-hover);
+  color: var(--ui-text);
 }
 
 /* ── Line Legend ── */
@@ -78,10 +199,10 @@
   bottom: 32px;
   left: 16px;
   z-index: 10;
-  background: rgba(10, 10, 20, 0.85);
+  background: var(--chrome-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--chrome-border);
   border-radius: 10px;
   padding: 14px 18px;
   max-height: 50vh;
@@ -91,7 +212,7 @@
 .legend-title {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--ui-text);
   margin-bottom: 10px;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -119,24 +240,24 @@
 
 .legend-label {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--ui-muted);
   white-space: nowrap;
 }
 
 /* ── Station Popup ── */
 
 .station-popup .mapboxgl-popup-content {
-  background: rgba(10, 10, 20, 0.92);
+  background: var(--chrome-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--chrome-border);
   border-radius: 8px;
   padding: 8px 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .station-popup .mapboxgl-popup-tip {
-  border-top-color: rgba(10, 10, 20, 0.92);
+  border-top-color: var(--ui-bg);
 }
 
 .popup-content {
@@ -155,7 +276,7 @@
 .popup-name {
   font-size: 13px;
   font-weight: 500;
-  color: #ffffff;
+  color: var(--ui-text);
   white-space: nowrap;
 }
 

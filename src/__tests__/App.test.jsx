@@ -19,7 +19,7 @@ vi.mock('mapbox-gl', () => ({
 
 // Mock react-map-gl components
 vi.mock('react-map-gl', () => ({
-  default: ({ children, ...props }) => <div data-testid="map" {...props}>{children}</div>,
+  default: ({ children }) => <div data-testid="map">{children}</div>,
   Source: ({ children }) => <div>{children}</div>,
   Layer: () => null,
   Popup: () => null,
@@ -34,10 +34,10 @@ describe('App', () => {
     expect(screen.getByTestId('map')).toBeTruthy()
   })
 
-  it('renders theme switcher buttons', () => {
+  it('renders hamburger menu', () => {
     const { container } = render(<App />)
-    const buttons = container.querySelectorAll('.theme-btn')
-    expect(buttons.length).toBe(4)
+    const toggle = container.querySelector('.menu-toggle')
+    expect(toggle).toBeTruthy()
   })
 
   it('renders line legend', () => {

@@ -155,5 +155,8 @@ playwright-report/
 # Processed transit data (regenerated from data/raw/)
 data/processed/
 
+# Mapbox token file
+mapbox.token
+
 # Claude Code local settings
 .claude/

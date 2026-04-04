@@ -8,30 +8,38 @@ test.describe('Smoke tests', () => {
 
   test('map canvas renders', async ({ page }) => {
     await page.goto('/')
-    // Mapbox GL renders into a canvas element
     const canvas = page.locator('.mapboxgl-canvas')
     await expect(canvas).toBeVisible({ timeout: 15000 })
   })
 
-  test('theme switcher is visible', async ({ page }) => {
+  test('hamburger menu is visible', async ({ page }) => {
     await page.goto('/')
-    const switcher = page.locator('.theme-switcher')
-    await expect(switcher).toBeVisible({ timeout: 10000 })
+    const toggle = page.locator('.menu-toggle')
+    await expect(toggle).toBeVisible({ timeout: 10000 })
   })
 
-  test('has all four theme buttons', async ({ page }) => {
+  test('menu opens and shows style section', async ({ page }) => {
     await page.goto('/')
-    await page.waitForSelector('.theme-switcher', { timeout: 10000 })
-    const buttons = page.locator('.theme-btn')
+    await page.locator('.menu-toggle').click()
+    const panel = page.locator('.menu-panel')
+    await expect(panel).toBeVisible()
+    const title = page.locator('.menu-section-title')
+    await expect(title).toHaveText('Style')
+  })
+
+  test('has all four theme buttons in menu', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('.menu-toggle').click()
+    const buttons = page.locator('.menu-theme-btn')
     await expect(buttons).toHaveCount(4)
   })
 
-  test('can switch to NYC theme', async ({ page }) => {
+  test('can switch to MTA theme via menu', async ({ page }) => {
     await page.goto('/')
-    await page.waitForSelector('.theme-switcher', { timeout: 10000 })
-    const nycBtn = page.locator('.theme-btn', { hasText: 'MTA' })
-    await nycBtn.click()
-    await expect(nycBtn).toHaveClass(/active/)
+    await page.locator('.menu-toggle').click()
+    const mtaBtn = page.locator('.menu-theme-btn', { hasText: 'MTA' })
+    await mtaBtn.click()
+    await expect(mtaBtn).toHaveClass(/active/)
   })
 
   test('line legend displays', async ({ page }) => {
@@ -41,7 +49,6 @@ test.describe('Smoke tests', () => {
   })
 
   test('accessible via LAN hostname', async ({ request }) => {
-    // Catches allowedHosts misconfiguration — the localhost tests won't
     const hostname = process.env.LAN_HOSTNAME
     if (!hostname) test.skip()
     const resp = await request.get(`http://${hostname}:5187/`)

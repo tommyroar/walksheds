@@ -1,14 +1,13 @@
 import { themes } from './themes'
 
-export default function LineLegend({ themeId }) {
-  const theme = themes[themeId]
-  if (!theme) return null
+const soundTransit = themes['sound-transit']
 
+export default function LineLegend() {
   return (
     <div className="line-legend">
-      <h3 className="legend-title">{theme.label}</h3>
+      <h3 className="legend-title">{soundTransit.label}</h3>
       <ul className="legend-list">
-        {Object.entries(theme.lines).map(([key, line]) => (
+        {Object.entries(soundTransit.lines).map(([key, line]) => (
           <li key={key} className="legend-item">
             <span
               className="legend-swatch"
