@@ -14,9 +14,6 @@ describe('themes', () => {
     const theme = themes[id]
     expect(theme.id).toBe(id)
     expect(theme.label).toBeTruthy()
-    expect(theme.city).toBeTruthy()
-    expect(theme.center).toHaveLength(2)
-    expect(typeof theme.zoom).toBe('number')
     expect(theme.mapStyle.theme).toBeTruthy()
     expect(theme.mapStyle.lightPreset).toBeTruthy()
     expect(Object.keys(theme.lines).length).toBeGreaterThan(0)

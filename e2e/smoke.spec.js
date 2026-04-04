@@ -29,7 +29,7 @@ test.describe('Smoke tests', () => {
   test('can switch to NYC theme', async ({ page }) => {
     await page.goto('/')
     await page.waitForSelector('.theme-switcher', { timeout: 10000 })
-    const nycBtn = page.locator('.theme-btn', { hasText: 'New York' })
+    const nycBtn = page.locator('.theme-btn', { hasText: 'MTA' })
     await nycBtn.click()
     await expect(nycBtn).toHaveClass(/active/)
   })

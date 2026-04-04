@@ -1,4 +1,12 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+// Mock fetch for GeoJSON loading
+const emptyFC = { type: 'FeatureCollection', features: [] }
+beforeEach(() => {
+  globalThis.fetch = vi.fn(() =>
+    Promise.resolve({ json: () => Promise.resolve(emptyFC) })
+  )
+})
 
 // Mock mapbox-gl since jsdom can't run WebGL
 vi.mock('mapbox-gl', () => ({

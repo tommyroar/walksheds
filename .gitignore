@@ -152,5 +152,8 @@ playwright-report/
 *.tfstate.backup
 *.tfvars
 
+# Processed transit data (regenerated from data/raw/)
+data/processed/
+
 # Claude Code local settings
 .claude/

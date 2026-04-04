@@ -1,24 +1,22 @@
 /**
- * Transit agency themes for the map.
+ * Transit agency map styles.
  *
- * Each theme defines:
- * - mapStyle: Mapbox Standard style import config (theme + lightPreset)
- * - center/zoom: default map view for that city
- * - lines: transit line colors used for overlays
- * - ui: colors for the theme switcher and other chrome
+ * Each theme defines a Mapbox Standard style configuration (theme + lightPreset)
+ * inspired by a real transit agency's visual identity. The map always shows
+ * Seattle — these only change the map's look and feel, not the location.
+ *
+ * The `lines` property stores the agency's line colors for reference/legend;
+ * the actual Seattle rail line colors are always Sound Transit's.
  */
 
 export const themes = {
   'sound-transit': {
     id: 'sound-transit',
     label: 'Sound Transit',
-    city: 'Seattle',
     mapStyle: {
       theme: 'monochrome',
       lightPreset: 'dusk',
     },
-    center: [-122.33, 47.60],
-    zoom: 11.5,
     lines: {
       '1-line': { color: '#0054A6', label: '1 Line' },
       '2-line': { color: '#F3901D', label: '2 Line' },
@@ -33,14 +31,11 @@ export const themes = {
 
   'london-underground': {
     id: 'london-underground',
-    label: 'London Underground',
-    city: 'London',
+    label: 'TfL',
     mapStyle: {
       theme: 'monochrome',
       lightPreset: 'night',
     },
-    center: [-0.118, 51.509],
-    zoom: 11,
     lines: {
       bakerloo:           { color: '#B36305', label: 'Bakerloo' },
       central:            { color: '#E32017', label: 'Central' },
@@ -65,14 +60,11 @@ export const themes = {
 
   'nyc-subway': {
     id: 'nyc-subway',
-    label: 'NYC Subway',
-    city: 'New York',
+    label: 'MTA',
     mapStyle: {
       theme: 'monochrome',
       lightPreset: 'dusk',
     },
-    center: [-73.985, 40.748],
-    zoom: 11,
     lines: {
       'ace':   { color: '#0039A6', label: 'A C E' },
       'bdfm':  { color: '#FF6319', label: 'B D F M' },
@@ -96,13 +88,10 @@ export const themes = {
   'tokyo-metro': {
     id: 'tokyo-metro',
     label: 'Tokyo Metro',
-    city: 'Tokyo',
     mapStyle: {
       theme: 'monochrome',
       lightPreset: 'dawn',
     },
-    center: [139.767, 35.681],
-    zoom: 11.5,
     lines: {
       ginza:      { color: '#FF9500', label: 'Ginza' },
       marunouchi: { color: '#F62E36', label: 'Marunouchi' },

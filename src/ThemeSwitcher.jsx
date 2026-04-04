@@ -20,7 +20,7 @@ export default function ThemeSwitcher({ activeThemeId, onSwitch }) {
               <span className="theme-line" style={{ background: t.ui.accent }} />
               <span className="theme-line" style={{ background: t.ui.accentAlt }} />
             </span>
-            <span className="theme-label">{t.city}</span>
+            <span className="theme-label">{t.label}</span>
           </button>
         )
       })}
