@@ -18,6 +18,7 @@ export default function App() {
   const [line1Data, setLine1Data] = useState(null)
   const [line2Data, setLine2Data] = useState(null)
   const [stationsData, setStationsData] = useState(null)
+  const [mapLoaded, setMapLoaded] = useState(false)
   const mapRef = useRef(null)
 
   const theme = themes[themeId]
@@ -27,6 +28,10 @@ export default function App() {
     fetch('/line1-alignment.geojson').then(r => r.json()).then(setLine1Data)
     fetch('/line2-alignment.geojson').then(r => r.json()).then(setLine2Data)
     fetch('/all-stations.geojson').then(r => r.json()).then(setStationsData)
+  }, [])
+
+  const handleMapLoad = useCallback(() => {
+    setMapLoaded(true)
   }, [])
 
   // Theme switch only changes style, not location
@@ -76,10 +81,11 @@ export default function App() {
         style={{ width: '100%', height: '100%' }}
         mapStyle="mapbox://styles/mapbox/standard"
         mapboxAccessToken={MAPBOX_TOKEN}
-        interactiveLayerIds={['station-circles']}
+        interactiveLayerIds={mapLoaded ? ['station-circles'] : []}
         onClick={handleMapClick}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onLoad={handleMapLoad}
         projection="mercator"
         config={{
           basemap: {
@@ -89,7 +95,7 @@ export default function App() {
         }}
       >
         {/* Line 1 alignment (SDOT data) */}
-        {line1Data && (
+        {mapLoaded && line1Data && (
           <Source id="line-1" type="geojson" data={line1Data}>
             <Layer
               id="line-1-casing"
@@ -113,7 +119,7 @@ export default function App() {
         )}
 
         {/* Line 2 alignment (SDOT data) */}
-        {line2Data && (
+        {mapLoaded && line2Data && (
           <Source id="line-2" type="geojson" data={line2Data}>
             <Layer
               id="line-2-casing"
@@ -137,7 +143,7 @@ export default function App() {
         )}
 
         {/* Stations (SDOT data) */}
-        {stationsData && (
+        {mapLoaded && stationsData && (
           <Source id="stations" type="geojson" data={stationsData}>
             <Layer
               id="station-glow"
