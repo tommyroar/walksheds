@@ -233,13 +233,12 @@ export default function App() {
 
       if (Math.abs(dx) < SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) return
 
+      // Drag/pan semantics: dragging up reveals what's south (like panning a map)
       let arrowKey = null
       if (Math.abs(dy) > Math.abs(dx)) {
-        // Swipe up → go north (ArrowUp), swipe down → go south (ArrowDown)
-        arrowKey = dy < 0 ? 'ArrowUp' : 'ArrowDown'
+        arrowKey = dy < 0 ? 'ArrowDown' : 'ArrowUp'
       } else {
-        // Swipe left → go west (ArrowLeft), swipe right → go east (ArrowRight)
-        arrowKey = dx < 0 ? 'ArrowLeft' : 'ArrowRight'
+        arrowKey = dx < 0 ? 'ArrowRight' : 'ArrowLeft'
       }
 
       navigateDirection(arrowKey)
