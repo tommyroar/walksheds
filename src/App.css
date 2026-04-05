@@ -1,223 +1,8 @@
-/* Light/dark chrome variables */
-.app.light {
-  --chrome-bg: rgba(255, 255, 255, 0.85);
-  --chrome-bg-hover: rgba(255, 255, 255, 0.95);
-  --chrome-border: rgba(0, 0, 0, 0.1);
-  --chrome-hover: rgba(0, 0, 0, 0.05);
-  --chrome-active: rgba(0, 0, 0, 0.08);
-}
-
-.app.dark {
-  --chrome-bg: rgba(10, 10, 20, 0.85);
-  --chrome-bg-hover: rgba(10, 10, 20, 0.95);
-  --chrome-border: rgba(255, 255, 255, 0.08);
-  --chrome-hover: rgba(255, 255, 255, 0.06);
-  --chrome-active: rgba(255, 255, 255, 0.1);
-}
-
 .app {
   width: 100%;
   height: 100%;
   position: relative;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-
-/* ── Hamburger Menu ── */
-
-.menu {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 10;
-  display: flex;
-  flex-direction: row-reverse;
-  align-items: flex-start;
-  gap: 0;
-}
-
-.menu-toggle {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 4px;
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--chrome-border);
-  border-radius: 10px;
-  background: var(--chrome-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  cursor: pointer;
-  transition: background 0.2s ease;
-  flex-shrink: 0;
-}
-
-.menu-toggle:hover {
-  background: var(--chrome-bg-hover);
-}
-
-.menu-bar {
-  width: 18px;
-  height: 2px;
-  background: var(--ui-text);
-  border-radius: 1px;
-  transition: all 0.25s ease;
-  opacity: 0.7;
-}
-
-/* Hamburger → X animation */
-.menu.open .menu-bar:nth-child(1) {
-  transform: translateY(6px) rotate(45deg);
-}
-.menu.open .menu-bar:nth-child(2) {
-  opacity: 0;
-}
-.menu.open .menu-bar:nth-child(3) {
-  transform: translateY(-6px) rotate(-45deg);
-}
-
-/* Panel that expands left from the toggle */
-.menu-panel {
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  max-width: 0;
-  opacity: 0;
-  background: var(--chrome-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--chrome-border);
-  border-radius: 10px;
-  margin-right: 8px;
-  transition: max-width 0.3s ease, opacity 0.25s ease, padding 0.3s ease;
-  padding: 0;
-  white-space: nowrap;
-}
-
-.menu.open .menu-panel {
-  max-width: 500px;
-  opacity: 1;
-  padding: 10px 14px;
-}
-
-.menu-section-title {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--ui-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin: 0 0 8px 0;
-}
-
-.menu-theme-list {
-  display: flex;
-  gap: 4px;
-}
-
-.menu-theme-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--ui-muted);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-}
-
-.menu-theme-btn:hover {
-  background: var(--chrome-hover);
-  color: var(--ui-text);
-}
-
-.menu-theme-btn.active {
-  background: var(--chrome-active);
-  border-color: var(--chrome-border);
-  color: var(--ui-text);
-}
-
-.menu-theme-lines {
-  display: flex;
-  gap: 3px;
-}
-
-.menu-theme-line {
-  width: 14px;
-  height: 3px;
-  border-radius: 1.5px;
-  opacity: 0.6;
-  transition: opacity 0.2s ease;
-}
-
-.menu-theme-btn.active .menu-theme-line {
-  opacity: 1;
-}
-
-.menu-theme-label {
-  white-space: nowrap;
-}
-
-.menu-divider {
-  width: 1px;
-  height: 32px;
-  background: var(--chrome-border);
-  margin: 0 6px;
-  flex-shrink: 0;
-}
-
-.menu-dark-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--ui-muted);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.menu-dark-toggle:hover {
-  background: var(--chrome-hover);
-  color: var(--ui-text);
-}
-
-/* ── Walkshed checkboxes ── */
-
-.menu-walkshed-list {
-  display: flex;
-  gap: 8px;
-}
-
-.menu-walkshed-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: var(--ui-muted);
-  cursor: pointer;
-  user-select: none;
-}
-
-.menu-walkshed-item input[type="checkbox"] {
-  accent-color: var(--ui-accent);
-  width: 13px;
-  height: 13px;
-  cursor: pointer;
-}
-
-.menu-walkshed-label {
-  white-space: nowrap;
 }
 
 /* ── Line Legend ── */
@@ -227,10 +12,10 @@
   bottom: 32px;
   left: 16px;
   z-index: 10;
-  background: var(--chrome-bg);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--chrome-border);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 10px;
   padding: 14px 18px;
   max-height: 50vh;
@@ -240,13 +25,11 @@
 .legend-title {
   font-size: 11px;
   font-weight: 700;
-  color: var(--ui-text);
+  color: #333;
   margin-bottom: 8px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
-
-/* ── Line legend items ── */
 
 .legend-lines {
   display: flex;
@@ -277,10 +60,10 @@
 .legend-line-label {
   font-size: 12px;
   font-weight: 500;
-  color: var(--ui-text);
+  color: #333;
 }
 
-/* ── Station pill example in legend ── */
+/* ── Station pill example ── */
 
 .legend-station-example {
   display: flex;
@@ -312,12 +95,6 @@
   flex-shrink: 0;
 }
 
-.legend-pill-circle.small {
-  width: 15px;
-  height: 15px;
-  font-size: 9px;
-}
-
 .legend-pill-code {
   display: flex;
   align-items: center;
@@ -332,77 +109,71 @@
   padding: 0 3px;
 }
 
-.legend-pill-code.small {
-  min-width: 18px;
-  height: 15px;
-  font-size: 9px;
-}
-
 .legend-station-desc {
   font-size: 12px;
   font-weight: 500;
-  color: var(--ui-text);
-}
-
-.legend-station-parts {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  margin-bottom: 4px;
-}
-
-.legend-part-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.legend-part-label {
-  font-size: 10px;
-  color: var(--ui-muted);
-}
-
-/* ── Walkshed legend ── */
-
-.legend-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.legend-swatch {
-  width: 20px;
-  height: 4px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-
-.legend-label {
-  font-size: 12px;
-  color: var(--ui-muted);
-  white-space: nowrap;
+  color: #333;
 }
 
 .legend-divider {
   height: 1px;
-  background: var(--chrome-border);
+  background: rgba(0, 0, 0, 0.1);
   margin: 10px 0;
+}
+
+/* ── Walkshed toggles in legend ── */
+
+.legend-walkshed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.legend-walkshed-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  margin: 0 -6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.legend-walkshed-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.legend-walkshed-item.dimmed {
+  opacity: 0.35;
+}
+
+.legend-walkshed-item.dimmed:hover {
+  opacity: 0.55;
 }
 
 .legend-swatch-walkshed {
   width: 16px;
   height: 12px;
   border-radius: 3px;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
 }
 
-/* ── Expanded station pill (replaces popup) ── */
+.legend-walkshed-label {
+  font-size: 12px;
+  color: #555;
+  white-space: nowrap;
+}
+
+.legend-walkshed-item.dimmed .legend-walkshed-label {
+  color: #999;
+}
+
+/* ── Expanded station pill ── */
 
 .station-expanded-pill {
   display: flex;
@@ -420,14 +191,8 @@
 }
 
 @keyframes pill-expand {
-  from {
-    transform: scale(0.8);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
 .expanded-pill-lines {

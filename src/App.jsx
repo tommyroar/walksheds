@@ -1,10 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import Map, { Source, Layer, Marker } from 'react-map-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { themes, defaultThemeId } from './themes'
 import { buildGraph, getNextStation, isJunction, getJunctionHints } from './routeGraph'
 import { registerStationIcons } from './stationIcons'
-import Menu from './Menu'
 import LineLegend from './LineLegend'
 import './App.css'
 
@@ -17,9 +15,19 @@ const SEATTLE_ZOOM = 11.5
 
 const WALKSHED_OPTIONS = [5, 10, 15]
 
-// Walkshed colors: subtle variations keyed by minutes.
-// These adapt to the theme accent via opacity layering.
-// Convert a polygon FeatureCollection to LineString for line-placement labels
+const WALKSHED_STYLES = {
+  15: { opacity: 0.10, outlineOpacity: 0.3 },
+  10: { opacity: 0.15, outlineOpacity: 0.4 },
+  5:  { opacity: 0.22, outlineOpacity: 0.6 },
+}
+
+const LINE_COLORS = {
+  '1-line': { color: '#4CAF50', label: '1 Line' },
+  '2-line': { color: '#0082C8', label: '2 Line' },
+}
+
+const WALKSHED_ACCENT = '#2D2B6B'
+
 function polygonToLine(geojson) {
   if (!geojson?.features?.length) return geojson
   return {
@@ -27,20 +35,10 @@ function polygonToLine(geojson) {
     features: geojson.features.map(f => ({
       type: 'Feature',
       properties: f.properties,
-      geometry: {
-        type: 'LineString',
-        coordinates: f.geometry.coordinates[0],
-      },
+      geometry: { type: 'LineString', coordinates: f.geometry.coordinates[0] },
     })),
   }
 }
-
-const WALKSHED_STYLES = {
-  15: { opacity: 0.10, outlineOpacity: 0.3 },
-  10: { opacity: 0.15, outlineOpacity: 0.4 },
-  5:  { opacity: 0.22, outlineOpacity: 0.6 },
-}
-
 
 async function fetchWalkshed(lng, lat, minutes) {
   const url = `https://api.mapbox.com/isochrone/v1/mapbox/walking/${lng},${lat}`
@@ -51,8 +49,6 @@ async function fetchWalkshed(lng, lat, minutes) {
 }
 
 export default function App() {
-  const [themeId, setThemeId] = useState(defaultThemeId)
-  const [darkMode, setDarkMode] = useState(false)
   const [popup, setPopup] = useState(null)
   const [walksheds, setWalksheds] = useState({})
   const [enabledWalksheds, setEnabledWalksheds] = useState(new Set([5, 10, 15]))
@@ -62,11 +58,10 @@ export default function App() {
   const [line2Data, setLine2Data] = useState(null)
   const [stationsData, setStationsData] = useState(null)
   const [mapLoaded, setMapLoaded] = useState(false)
+  const [iconsReady, setIconsReady] = useState(false)
   const mapRef = useRef(null)
   const selectedStationRef = useRef(null)
   const graphRef = useRef(null)
-
-  const theme = themes[themeId]
 
   useEffect(() => {
     fetch('/line1-alignment.geojson').then(r => r.json()).then(setLine1Data)
@@ -74,15 +69,10 @@ export default function App() {
     fetch('/all-stations.geojson').then(r => r.json()).then(setStationsData)
   }, [])
 
-  // Build route graph when station data loads
   useEffect(() => {
-    if (stationsData) {
-      graphRef.current = buildGraph(stationsData)
-    }
+    if (stationsData) graphRef.current = buildGraph(stationsData)
   }, [stationsData])
 
-  // Register pill icons when both map and stations are ready
-  const [iconsReady, setIconsReady] = useState(false)
   useEffect(() => {
     if (!mapLoaded || !stationsData) return
     const map = mapRef.current?.getMap()
@@ -90,25 +80,7 @@ export default function App() {
     registerStationIcons(map, stationsData).then(() => setIconsReady(true))
   }, [mapLoaded, stationsData])
 
-  const handleMapLoad = useCallback(() => {
-    setMapLoaded(true)
-  }, [])
-
-  const mode = darkMode ? 'dark' : 'light'
-  const uiColors = theme.ui[mode]
-  const lightPreset = theme.mapStyle[mode].lightPreset
-
-  useEffect(() => {
-    const map = mapRef.current?.getMap()
-    if (!map || !mapLoaded) return
-    map.setConfigProperty('basemap', 'theme', theme.mapStyle.theme)
-    map.setConfigProperty('basemap', 'lightPreset', lightPreset)
-  }, [themeId, darkMode, mapLoaded, theme.mapStyle.theme, lightPreset])
-
-  const handleThemeSwitch = useCallback((newId) => {
-    setThemeId(newId)
-    setPopup(null)
-  }, [])
+  const handleMapLoad = useCallback(() => setMapLoaded(true), [])
 
   const handleWalkshedToggle = useCallback((minutes) => {
     setEnabledWalksheds(prev => {
@@ -119,10 +91,8 @@ export default function App() {
     })
   }, [])
 
-  // Select a station: set expanded pill, fetch walksheds, update junction hints
   const selectStation = useCallback((name, lng, lat, line, fly = false) => {
     selectedStationRef.current = { name, lng, lat }
-    // Look up stop code and lines from station data
     const feat = stationsData?.features.find(f => f.properties.name === name)
     const stopCode = feat?.properties.stopCode ?? null
     const lines = feat?.properties.lines ?? line.replace('-line', '')
@@ -130,16 +100,13 @@ export default function App() {
     setCurrentLine(line)
     setWalksheds({})
 
-    // Show junction hints if this is a divergence point
     if (graphRef.current && isJunction(graphRef.current, name)) {
       setJunctionHints(getJunctionHints(graphRef.current, name))
     } else {
       setJunctionHints([])
     }
 
-    if (fly) {
-      mapRef.current?.flyTo({ center: [lng, lat], duration: 600 })
-    }
+    if (fly) mapRef.current?.flyTo({ center: [lng, lat], duration: 600 })
 
     const results = {}
     Promise.all(
@@ -148,9 +115,7 @@ export default function App() {
         if (data) results[min] = data
       })
     ).then(() => {
-      if (selectedStationRef.current?.name === name) {
-        setWalksheds(results)
-      }
+      if (selectedStationRef.current?.name === name) setWalksheds(results)
     })
   }, [stationsData])
 
@@ -170,27 +135,17 @@ export default function App() {
     setJunctionHints([])
   }, [selectStation])
 
-  // Arrow key navigation along route (line-aware)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!graphRef.current || !selectedStationRef.current) return
       if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return
-
-      const result = getNextStation(
-        graphRef.current,
-        selectedStationRef.current.name,
-        e.key,
-        currentLine,
-      )
+      const result = getNextStation(graphRef.current, selectedStationRef.current.name, e.key, currentLine)
       if (!result) return
-
       e.preventDefault()
       const nextNode = graphRef.current.get(result.name)
       if (!nextNode) return
-
       selectStation(result.name, nextNode.coords[0], nextNode.coords[1], result.line, true)
     }
-
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [currentLine, selectStation])
@@ -205,14 +160,10 @@ export default function App() {
     if (map) map.getCanvas().style.cursor = ''
   }, [])
 
-  const lineColors = themes['sound-transit'].lines
-  const walkshedAccent = theme.ui.accent
-
-  // Render walksheds largest-first so smaller ones layer on top
   const walkshedLayers = [15, 10, 5]
 
   return (
-    <div className={`app ${darkMode ? 'dark' : 'light'}`} style={{ '--ui-bg': uiColors.bg, '--ui-text': uiColors.text, '--ui-muted': uiColors.muted, '--ui-accent': theme.ui.accent }}>
+    <div className="app">
       <Map
         ref={mapRef}
         initialViewState={{
@@ -230,13 +181,10 @@ export default function App() {
         onLoad={handleMapLoad}
         projection="mercator"
         config={{
-          basemap: {
-            theme: theme.mapStyle.theme,
-            lightPreset: lightPreset,
-          },
+          basemap: { theme: 'default', lightPreset: 'day' },
         }}
       >
-        {/* Walkshed isochrones — rendered largest to smallest */}
+        {/* Walkshed isochrones */}
         {walkshedLayers.map((min) => {
           const data = walksheds[min]
           if (!mapLoaded || !data || !enabledWalksheds.has(min)) return null
@@ -248,19 +196,12 @@ export default function App() {
                 <Layer
                   id={`walkshed-fill-${min}`}
                   type="fill"
-                  paint={{
-                    'fill-color': walkshedAccent,
-                    'fill-opacity': style.opacity,
-                  }}
+                  paint={{ 'fill-color': WALKSHED_ACCENT, 'fill-opacity': style.opacity }}
                 />
                 <Layer
                   id={`walkshed-outline-${min}`}
                   type="line"
-                  paint={{
-                    'line-color': walkshedAccent,
-                    'line-width': min === 5 ? 2 : 1.5,
-                    'line-opacity': style.outlineOpacity,
-                  }}
+                  paint={{ 'line-color': WALKSHED_ACCENT, 'line-width': min === 5 ? 2 : 1.5, 'line-opacity': style.outlineOpacity }}
                 />
               </Source>
               <Source id={`walkshed-label-${min}`} type="geojson" data={lineData}>
@@ -276,8 +217,8 @@ export default function App() {
                     'text-keep-upright': true,
                   }}
                   paint={{
-                    'text-color': walkshedAccent,
-                    'text-halo-color': darkMode ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.8)',
+                    'text-color': WALKSHED_ACCENT,
+                    'text-halo-color': 'rgba(255,255,255,0.8)',
                     'text-halo-width': 1.5,
                   }}
                 />
@@ -286,39 +227,23 @@ export default function App() {
           )
         })}
 
-        {/* Line 1 alignment */}
+        {/* Line 1 */}
         {mapLoaded && line1Data && (
           <Source id="line-1" type="geojson" data={line1Data}>
-            <Layer
-              id="line-1-casing"
-              type="line"
-              paint={{ 'line-color': '#000000', 'line-width': 7, 'line-opacity': 0.3 }}
-            />
-            <Layer
-              id="line-1-stroke"
-              type="line"
-              paint={{ 'line-color': lineColors['1-line'].color, 'line-width': 4, 'line-opacity': 0.9 }}
-            />
+            <Layer id="line-1-casing" type="line" paint={{ 'line-color': '#000000', 'line-width': 7, 'line-opacity': 0.3 }} />
+            <Layer id="line-1-stroke" type="line" paint={{ 'line-color': LINE_COLORS['1-line'].color, 'line-width': 4, 'line-opacity': 0.9 }} />
           </Source>
         )}
 
-        {/* Line 2 alignment */}
+        {/* Line 2 */}
         {mapLoaded && line2Data && (
           <Source id="line-2" type="geojson" data={line2Data}>
-            <Layer
-              id="line-2-casing"
-              type="line"
-              paint={{ 'line-color': '#000000', 'line-width': 7, 'line-opacity': 0.3 }}
-            />
-            <Layer
-              id="line-2-stroke"
-              type="line"
-              paint={{ 'line-color': lineColors['2-line'].color, 'line-width': 4, 'line-opacity': 0.9 }}
-            />
+            <Layer id="line-2-casing" type="line" paint={{ 'line-color': '#000000', 'line-width': 7, 'line-opacity': 0.3 }} />
+            <Layer id="line-2-stroke" type="line" paint={{ 'line-color': LINE_COLORS['2-line'].color, 'line-width': 4, 'line-opacity': 0.9 }} />
           </Source>
         )}
 
-        {/* Stations — pill icons with line numbers and stop codes */}
+        {/* Stations */}
         {mapLoaded && iconsReady && stationsData && (
           <Source id="stations" type="geojson" data={stationsData}>
             <Layer
@@ -334,20 +259,16 @@ export default function App() {
           </Source>
         )}
 
-        {/* Selected station — expanded pill marker */}
+        {/* Selected station — expanded pill */}
         {popup && (
-          <Marker
-            longitude={popup.longitude}
-            latitude={popup.latitude}
-            anchor="center"
-          >
+          <Marker longitude={popup.longitude} latitude={popup.latitude} anchor="center">
             <div className="station-expanded-pill">
               <div className="expanded-pill-lines">
                 {(popup.lines || popup.line.replace('-line', '')).split(',').map(num => (
                   <span
                     key={num}
                     className="expanded-pill-circle"
-                    style={{ background: lineColors[`${num.trim()}-line`]?.color || '#999' }}
+                    style={{ background: LINE_COLORS[`${num.trim()}-line`]?.color || '#999' }}
                   >
                     {num.trim()}
                   </span>
@@ -372,15 +293,12 @@ export default function App() {
         )}
       </Map>
 
-      <Menu
-        activeThemeId={themeId}
-        darkMode={darkMode}
+      <LineLegend
+        lineColors={LINE_COLORS}
         enabledWalksheds={enabledWalksheds}
-        onThemeSwitch={handleThemeSwitch}
-        onDarkModeToggle={() => setDarkMode(d => !d)}
+        walkshedAccent={WALKSHED_ACCENT}
         onWalkshedToggle={handleWalkshedToggle}
       />
-      <LineLegend enabledWalksheds={enabledWalksheds} themeAccent={theme.ui.accent} />
     </div>
   )
 }

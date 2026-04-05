@@ -12,40 +12,37 @@ test.describe('Smoke tests', () => {
     await expect(canvas).toBeVisible({ timeout: 15000 })
   })
 
-  test('hamburger menu is visible', async ({ page }) => {
-    await page.goto('/')
-    const toggle = page.locator('.menu-toggle')
-    await expect(toggle).toBeVisible({ timeout: 10000 })
-  })
-
-  test('menu opens and shows style section', async ({ page }) => {
-    await page.goto('/')
-    await page.locator('.menu-toggle').click()
-    const panel = page.locator('.menu-panel')
-    await expect(panel).toBeVisible()
-    const title = page.locator('.menu-section-title').first()
-    await expect(title).toHaveText('Style')
-  })
-
-  test('has all four theme buttons in menu', async ({ page }) => {
-    await page.goto('/')
-    await page.locator('.menu-toggle').click()
-    const buttons = page.locator('.menu-theme-btn')
-    await expect(buttons).toHaveCount(4)
-  })
-
-  test('can switch to MTA theme via menu', async ({ page }) => {
-    await page.goto('/')
-    await page.locator('.menu-toggle').click()
-    const mtaBtn = page.locator('.menu-theme-btn', { hasText: 'MTA' })
-    await mtaBtn.click()
-    await expect(mtaBtn).toHaveClass(/active/)
-  })
-
-  test('line legend displays', async ({ page }) => {
+  test('legend is visible with line info', async ({ page }) => {
     await page.goto('/')
     const legend = page.locator('.line-legend')
     await expect(legend).toBeVisible({ timeout: 10000 })
+    const title = page.locator('.legend-title').first()
+    await expect(title).toHaveText('Link light rail')
+  })
+
+  test('legend has walkshed toggles', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForSelector('.line-legend', { timeout: 10000 })
+    const items = page.locator('.legend-walkshed-item')
+    await expect(items).toHaveCount(3)
+  })
+
+  test('clicking walkshed toggle dims it', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForSelector('.line-legend', { timeout: 10000 })
+    const item = page.locator('.legend-walkshed-item').first()
+    await item.click()
+    await expect(item).toHaveClass(/dimmed/)
+  })
+
+  test('clicking dimmed walkshed toggle re-enables it', async ({ page }) => {
+    await page.goto('/')
+    await page.waitForSelector('.line-legend', { timeout: 10000 })
+    const item = page.locator('.legend-walkshed-item').first()
+    await item.click()
+    await expect(item).toHaveClass(/dimmed/)
+    await item.click()
+    await expect(item).not.toHaveClass(/dimmed/)
   })
 
   test('accessible via LAN hostname', async ({ request }) => {

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Mock fetch for GeoJSON loading
 const emptyFC = { type: 'FeatureCollection', features: [] }
 beforeEach(() => {
   globalThis.fetch = vi.fn(() =>
@@ -8,7 +7,6 @@ beforeEach(() => {
   )
 })
 
-// Mock mapbox-gl since jsdom can't run WebGL
 vi.mock('mapbox-gl', () => ({
   default: {
     Map: vi.fn(),
@@ -17,12 +15,11 @@ vi.mock('mapbox-gl', () => ({
   },
 }))
 
-// Mock react-map-gl components
 vi.mock('react-map-gl', () => ({
   default: ({ children }) => <div data-testid="map">{children}</div>,
   Source: ({ children }) => <div>{children}</div>,
   Layer: () => null,
-  Popup: () => null,
+  Marker: ({ children }) => <div>{children}</div>,
 }))
 
 import { render, screen } from '@testing-library/react'
@@ -34,15 +31,11 @@ describe('App', () => {
     expect(screen.getByTestId('map')).toBeTruthy()
   })
 
-  it('renders hamburger menu', () => {
-    const { container } = render(<App />)
-    const toggle = container.querySelector('.menu-toggle')
-    expect(toggle).toBeTruthy()
-  })
-
-  it('renders line legend', () => {
+  it('renders line legend with walkshed toggles', () => {
     const { container } = render(<App />)
     const legend = container.querySelector('.line-legend')
     expect(legend).toBeTruthy()
+    const walkshedItems = container.querySelectorAll('.legend-walkshed-item')
+    expect(walkshedItems.length).toBe(3)
   })
 })
