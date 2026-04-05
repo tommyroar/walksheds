@@ -1,0 +1,52 @@
+import { Source, Layer } from 'react-map-gl'
+import { polygonToLine } from './mapbox'
+import { WALKSHED_STYLES, WALKSHED_ACCENT_LIGHT, WALKSHED_ACCENT_DARK, WALKSHED_RENDER_ORDER } from './constants'
+
+export default function WalkshedLayers({ walksheds, enabledWalksheds, darkMode, mapLoaded }) {
+  if (!mapLoaded) return null
+
+  const accent = darkMode ? WALKSHED_ACCENT_DARK : WALKSHED_ACCENT_LIGHT
+  const styles = darkMode ? WALKSHED_STYLES.dark : WALKSHED_STYLES.light
+
+  return WALKSHED_RENDER_ORDER.map((min) => {
+    const data = walksheds[min]
+    if (!data || !enabledWalksheds.has(min)) return null
+    const style = styles[min]
+    const lineData = polygonToLine(data)
+    return (
+      <span key={`walkshed-group-${min}`}>
+        <Source id={`walkshed-${min}`} type="geojson" data={data}>
+          <Layer
+            id={`walkshed-fill-${min}`}
+            type="fill"
+            paint={{ 'fill-color': accent, 'fill-opacity': style.opacity }}
+          />
+          <Layer
+            id={`walkshed-outline-${min}`}
+            type="line"
+            paint={{ 'line-color': accent, 'line-width': style.lineWidth, 'line-opacity': style.outlineOpacity }}
+          />
+        </Source>
+        <Source id={`walkshed-label-${min}`} type="geojson" data={lineData}>
+          <Layer
+            id={`walkshed-label-${min}`}
+            type="symbol"
+            layout={{
+              'symbol-placement': 'line',
+              'text-field': `${min} min`,
+              'text-size': 13,
+              'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'],
+              'symbol-spacing': 150,
+              'text-keep-upright': true,
+            }}
+            paint={{
+              'text-color': accent,
+              'text-halo-color': darkMode ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)',
+              'text-halo-width': 2,
+            }}
+          />
+        </Source>
+      </span>
+    )
+  })
+}

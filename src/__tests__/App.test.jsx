@@ -23,16 +23,16 @@ vi.mock('react-map-gl', () => ({
 }))
 
 import { render, screen } from '@testing-library/react'
-import App from '../App'
+import Walksheds from '../Walksheds'
 
-describe('App', () => {
+describe('Walksheds', () => {
   it('renders without crashing', () => {
-    render(<App />)
+    render(<Walksheds />)
     expect(screen.getByTestId('map')).toBeTruthy()
   })
 
   it('renders line legend with walkshed toggles', () => {
-    const { container } = render(<App />)
+    const { container } = render(<Walksheds />)
     const legend = container.querySelector('.line-legend')
     expect(legend).toBeTruthy()
     const walkshedItems = container.querySelectorAll('.legend-walkshed-item')

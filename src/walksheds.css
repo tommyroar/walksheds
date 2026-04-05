@@ -1,3 +1,25 @@
+/* ── Reset ── */
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  color-scheme: light;
+  background: #e8e8e8;
+}
+
+/* ── App container ── */
+
 .app {
   width: 100%;
   height: 100%;
@@ -22,14 +44,9 @@
 }
 
 .app.dark .line-legend {
-  background: #1a1a24;
-  border-color: rgba(255, 255, 255, 0.1);
-  color-scheme: dark;
-}
-
-.app.dark .line-legend {
   background: rgba(20, 20, 30, 0.88);
   border-color: rgba(255, 255, 255, 0.08);
+  color-scheme: dark;
 }
 
 /* ── Dark mode toggle ── */
