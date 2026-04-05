@@ -21,43 +21,56 @@ CORS(app)
 # ---------------------------------------------------------------------------
 
 LINES = {
-    "1-line": Line(id="1-line", name="1 Line", color="#0054A6", agency_id="sound-transit"),
-    "2-line": Line(id="2-line", name="2 Line", color="#F3901D", agency_id="sound-transit"),
+    "1-line": Line(id="1-line", name="1 Line", color="#4CAF50", agency_id="sound-transit"),
+    "2-line": Line(id="2-line", name="2 Line", color="#0082C8", agency_id="sound-transit"),
 }
 
 STATIONS: dict[str, Station] = {}
 
+# Line 1: Lynnwood → Federal Way Downtown
 _LINE_1_STATIONS = [
-    ("northgate", "Northgate", 47.7063, -122.3281),
-    ("roosevelt", "Roosevelt", 47.6897, -122.3166),
-    ("u-district", "U District", 47.6614, -122.3118),
+    ("lynnwood", "Lynnwood City Center", 47.8156, -122.2948),
+    ("mountlake-terrace", "Mountlake Terrace", 47.7850, -122.3148),
+    ("shoreline-north", "Shoreline North/185th", 47.7641, -122.3229),
+    ("shoreline-south", "Shoreline South/148th", 47.7361, -122.3252),
+    ("northgate", "Northgate", 47.7030, -122.3283),
+    ("roosevelt", "Roosevelt", 47.6766, -122.3160),
+    ("u-district", "U District", 47.6603, -122.3141),
     ("uw", "University of Washington", 47.6498, -122.3038),
-    ("capitol-hill", "Capitol Hill", 47.6192, -122.3225),
-    ("westlake", "Westlake", 47.6115, -122.3375),
-    ("university-street", "University Street", 47.6076, -122.3362),
-    ("pioneer-square", "Pioneer Square", 47.6021, -122.3320),
-    ("intl-district", "International District / Chinatown", 47.5982, -122.3270),
-    ("stadium", "Stadium", 47.5910, -122.3280),
-    ("sodo", "SODO", 47.5800, -122.3274),
-    ("beacon-hill", "Beacon Hill", 47.5685, -122.3118),
-    ("mount-baker", "Mount Baker", 47.5763, -122.2976),
-    ("columbia-city", "Columbia City", 47.5594, -122.2929),
-    ("othello", "Othello", 47.5383, -122.2812),
-    ("rainier-beach", "Rainier Beach", 47.5221, -122.2687),
-    ("tukwila", "Tukwila International Blvd", 47.4876, -122.2882),
-    ("seatac", "SeaTac / Airport", 47.4449, -122.2967),
-    ("angle-lake", "Angle Lake", 47.4322, -122.2978),
+    ("capitol-hill", "Capitol Hill", 47.6191, -122.3202),
+    ("westlake", "Westlake", 47.6116, -122.3367),
+    ("symphony", "Symphony", 47.6078, -122.3360),
+    ("pioneer-square", "Pioneer Square", 47.6026, -122.3312),
+    ("intl-district", "International District / Chinatown", 47.5984, -122.3280),
+    ("stadium", "Stadium", 47.5911, -122.3272),
+    ("sodo", "SODO", 47.5811, -122.3274),
+    ("beacon-hill", "Beacon Hill", 47.5793, -122.3115),
+    ("mount-baker", "Mount Baker", 47.5766, -122.2977),
+    ("columbia-city", "Columbia City", 47.5597, -122.2927),
+    ("othello", "Othello", 47.5380, -122.2816),
+    ("rainier-beach", "Rainier Beach", 47.5224, -122.2794),
+    ("tukwila", "Tukwila International Blvd", 47.4640, -122.2880),
+    ("seatac", "SeaTac / Airport", 47.4454, -122.2969),
+    ("angle-lake", "Angle Lake", 47.4227, -122.2977),
+    ("kent-des-moines", "Kent Des Moines", 47.4110, -122.2953),
+    ("star-lake", "Star Lake", 47.3940, -122.2930),
+    ("federal-way", "Federal Way Downtown", 47.3170, -122.3120),
 ]
 
+# Line 2: east-only stations (shared stations loaded from Line 1)
 _LINE_2_STATIONS = [
-    ("south-bellevue", "South Bellevue", 47.5882, -122.1805),
-    ("east-main", "East Main", 47.6018, -122.1842),
-    ("bellevue-downtown", "Bellevue Downtown", 47.6152, -122.1985),
-    ("wilburton", "Wilburton", 47.6223, -122.1878),
-    ("spring-district", "Spring District / 120th", 47.6270, -122.1780),
-    ("belred", "BelRed / 130th", 47.6280, -122.1651),
-    ("overlake-village", "Overlake Village", 47.6311, -122.1487),
-    ("redmond-tech", "Redmond Technology", 47.6434, -122.1291),
+    ("judkins-park", "Judkins Park", 47.5903, -122.3045),
+    ("mercer-island", "Mercer Island", 47.5882, -122.2332),
+    ("south-bellevue", "South Bellevue", 47.5866, -122.1904),
+    ("east-main", "East Main", 47.6082, -122.1911),
+    ("bellevue-downtown", "Bellevue Downtown", 47.6152, -122.1921),
+    ("wilburton", "Wilburton", 47.6180, -122.1838),
+    ("spring-district", "Spring District/120th", 47.6238, -122.1786),
+    ("belred", "Bel-Red/130th", 47.6244, -122.1656),
+    ("overlake-village", "Overlake Village", 47.6363, -122.1389),
+    ("redmond-tech", "Redmond Technology Center", 47.6448, -122.1336),
+    ("marymoor-village", "Marymoor Village", 47.6620, -122.1180),
+    ("downtown-redmond", "Downtown Redmond", 47.6732, -122.1248),
 ]
 
 for sid, name, lat, lng in _LINE_1_STATIONS:

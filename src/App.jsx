@@ -1,13 +1,16 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import Map, { Source, Layer, Popup } from 'react-map-gl'
+import Map, { Source, Layer, Marker } from 'react-map-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { themes, defaultThemeId } from './themes'
-import { buildGraph, getNextStation } from './routeGraph'
+import { buildGraph, getNextStation, isJunction, getJunctionHints } from './routeGraph'
+import { registerStationIcons } from './stationIcons'
 import Menu from './Menu'
 import LineLegend from './LineLegend'
 import './App.css'
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
+
+const ARROW_SYMBOLS = { ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→' }
 
 const SEATTLE_CENTER = [-122.33, 47.60]
 const SEATTLE_ZOOM = 11.5
@@ -51,8 +54,10 @@ export default function App() {
   const [themeId, setThemeId] = useState(defaultThemeId)
   const [darkMode, setDarkMode] = useState(false)
   const [popup, setPopup] = useState(null)
-  const [walksheds, setWalksheds] = useState({}) // { 5: geojson, 10: geojson, 15: geojson }
+  const [walksheds, setWalksheds] = useState({})
   const [enabledWalksheds, setEnabledWalksheds] = useState(new Set([5, 10, 15]))
+  const [currentLine, setCurrentLine] = useState(null)
+  const [junctionHints, setJunctionHints] = useState([])
   const [line1Data, setLine1Data] = useState(null)
   const [line2Data, setLine2Data] = useState(null)
   const [stationsData, setStationsData] = useState(null)
@@ -75,6 +80,15 @@ export default function App() {
       graphRef.current = buildGraph(stationsData)
     }
   }, [stationsData])
+
+  // Register pill icons when both map and stations are ready
+  const [iconsReady, setIconsReady] = useState(false)
+  useEffect(() => {
+    if (!mapLoaded || !stationsData) return
+    const map = mapRef.current?.getMap()
+    if (!map) return
+    registerStationIcons(map, stationsData).then(() => setIconsReady(true))
+  }, [mapLoaded, stationsData])
 
   const handleMapLoad = useCallback(() => {
     setMapLoaded(true)
@@ -105,17 +119,28 @@ export default function App() {
     })
   }, [])
 
-  // Select a station: set popup, fetch walksheds, fly to it
+  // Select a station: set expanded pill, fetch walksheds, update junction hints
   const selectStation = useCallback((name, lng, lat, line, fly = false) => {
     selectedStationRef.current = { name, lng, lat }
-    setPopup({ longitude: lng, latitude: lat, name, line })
+    // Look up stop code and lines from station data
+    const feat = stationsData?.features.find(f => f.properties.name === name)
+    const stopCode = feat?.properties.stopCode ?? null
+    const lines = feat?.properties.lines ?? line.replace('-line', '')
+    setPopup({ longitude: lng, latitude: lat, name, line, stopCode, lines })
+    setCurrentLine(line)
     setWalksheds({})
+
+    // Show junction hints if this is a divergence point
+    if (graphRef.current && isJunction(graphRef.current, name)) {
+      setJunctionHints(getJunctionHints(graphRef.current, name))
+    } else {
+      setJunctionHints([])
+    }
 
     if (fly) {
       mapRef.current?.flyTo({ center: [lng, lat], duration: 600 })
     }
 
-    // Fetch all walkshed isochrones in parallel
     const results = {}
     Promise.all(
       WALKSHED_OPTIONS.map(async (min) => {
@@ -127,7 +152,7 @@ export default function App() {
         setWalksheds(results)
       }
     })
-  }, [])
+  }, [stationsData])
 
   const handleMapClick = useCallback((e) => {
     const features = e.features
@@ -141,31 +166,34 @@ export default function App() {
     selectedStationRef.current = null
     setPopup(null)
     setWalksheds({})
+    setCurrentLine(null)
+    setJunctionHints([])
   }, [selectStation])
 
-  // Arrow key navigation along route
+  // Arrow key navigation along route (line-aware)
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (!graphRef.current || !selectedStationRef.current) return
       if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return
 
-      const nextName = getNextStation(graphRef.current, selectedStationRef.current.name, e.key)
-      if (!nextName) return
+      const result = getNextStation(
+        graphRef.current,
+        selectedStationRef.current.name,
+        e.key,
+        currentLine,
+      )
+      if (!result) return
 
       e.preventDefault()
-      const nextNode = graphRef.current.get(nextName)
+      const nextNode = graphRef.current.get(result.name)
       if (!nextNode) return
 
-      // Find the line for this station from the GeoJSON
-      const feature = stationsData?.features.find(f => f.properties.name === nextName)
-      const line = feature?.properties.line || nextNode.line
-
-      selectStation(nextName, nextNode.coords[0], nextNode.coords[1], line, true)
+      selectStation(result.name, nextNode.coords[0], nextNode.coords[1], result.line, true)
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [stationsData, selectStation])
+  }, [currentLine, selectStation])
 
   const handleMouseEnter = useCallback(() => {
     const map = mapRef.current
@@ -290,46 +318,57 @@ export default function App() {
           </Source>
         )}
 
-        {/* Stations */}
-        {mapLoaded && stationsData && (
+        {/* Stations — pill icons with line numbers and stop codes */}
+        {mapLoaded && iconsReady && stationsData && (
           <Source id="stations" type="geojson" data={stationsData}>
             <Layer
-              id="station-glow"
-              type="circle"
-              paint={{
-                'circle-radius': 10,
-                'circle-color': ['match', ['get', 'line'], '1-line', lineColors['1-line'].color, '2-line', lineColors['2-line'].color, '#ffffff'],
-                'circle-opacity': 0.15,
-                'circle-blur': 1,
-              }}
-            />
-            <Layer
               id="station-circles"
-              type="circle"
-              paint={{
-                'circle-radius': 5,
-                'circle-color': '#ffffff',
-                'circle-stroke-width': 2,
-                'circle-stroke-color': ['match', ['get', 'line'], '1-line', lineColors['1-line'].color, '2-line', lineColors['2-line'].color, '#ffffff'],
+              type="symbol"
+              layout={{
+                'icon-image': ['concat', 'station-', ['get', 'lines'], '-', ['to-string', ['get', 'stopCode']]],
+                'icon-size': 0.9,
+                'icon-allow-overlap': true,
+                'icon-ignore-placement': true,
               }}
             />
           </Source>
         )}
 
+        {/* Selected station — expanded pill marker */}
         {popup && (
-          <Popup
+          <Marker
             longitude={popup.longitude}
             latitude={popup.latitude}
-            anchor="bottom"
-            onClose={() => { setPopup(null); setWalksheds({}); selectedStationRef.current = null }}
-            closeButton={false}
-            className="station-popup"
+            anchor="center"
           >
-            <div className="popup-content">
-              <span className="popup-line-dot" style={{ background: lineColors[popup.line]?.color || '#fff' }} />
-              <span className="popup-name">{popup.name}</span>
+            <div className="station-expanded-pill">
+              <div className="expanded-pill-lines">
+                {(popup.lines || popup.line.replace('-line', '')).split(',').map(num => (
+                  <span
+                    key={num}
+                    className="expanded-pill-circle"
+                    style={{ background: lineColors[`${num.trim()}-line`]?.color || '#999' }}
+                  >
+                    {num.trim()}
+                  </span>
+                ))}
+              </div>
+              {popup.stopCode != null && (
+                <span className="expanded-pill-code">{popup.stopCode}</span>
+              )}
+              <span className="expanded-pill-name">{popup.name.replace(' Station', '')}</span>
+              {junctionHints.length > 0 && (
+                <div className="expanded-pill-hints">
+                  {junctionHints.map((hint) => (
+                    <span key={hint.line} className="expanded-pill-hint">
+                      <kbd>{ARROW_SYMBOLS[hint.arrowKey]}</kbd>
+                      {hint.line === '1-line' ? '1' : '2'}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
-          </Popup>
+          </Marker>
         )}
       </Map>
 

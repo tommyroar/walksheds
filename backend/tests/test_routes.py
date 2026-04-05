@@ -28,13 +28,13 @@ class TestStations:
         assert resp.status_code == 200
         data = resp.get_json()
         assert data["type"] == "FeatureCollection"
-        assert len(data["features"]) == 27  # 19 + 8
+        assert len(data["features"]) == 38  # 26 Line 1 + 12 Line 2
 
     @pytest.mark.unit
     def test_filter_by_line(self, client):
         resp = client.get("/api/stations?line_id=2-line")
         data = resp.get_json()
-        assert len(data["features"]) == 8
+        assert len(data["features"]) == 12
 
     @pytest.mark.unit
     def test_get_single_station(self, client):

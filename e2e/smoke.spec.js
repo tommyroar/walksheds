@@ -23,7 +23,7 @@ test.describe('Smoke tests', () => {
     await page.locator('.menu-toggle').click()
     const panel = page.locator('.menu-panel')
     await expect(panel).toBeVisible()
-    const title = page.locator('.menu-section-title')
+    const title = page.locator('.menu-section-title').first()
     await expect(title).toHaveText('Style')
   })
 

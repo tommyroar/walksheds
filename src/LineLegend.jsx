@@ -15,15 +15,38 @@ export default function LineLegend({ enabledWalksheds, themeAccent }) {
 
   return (
     <div className="line-legend">
-      <h3 className="legend-title">{soundTransit.label}</h3>
-      <ul className="legend-list">
-        {Object.entries(soundTransit.lines).map(([key, line]) => (
-          <li key={key} className="legend-item">
-            <span className="legend-swatch" style={{ background: line.color }} />
-            <span className="legend-label">{line.label}</span>
-          </li>
-        ))}
-      </ul>
+      <h3 className="legend-title">Link light rail</h3>
+
+      <div className="legend-lines">
+        <div className="legend-line-item">
+          <span className="legend-line-circle" style={{ background: soundTransit.lines['1-line'].color }}>1</span>
+          <span className="legend-line-label">{soundTransit.lines['1-line'].label}</span>
+        </div>
+        <div className="legend-line-item">
+          <span className="legend-line-circle" style={{ background: soundTransit.lines['2-line'].color }}>2</span>
+          <span className="legend-line-label">{soundTransit.lines['2-line'].label}</span>
+        </div>
+      </div>
+
+      <div className="legend-station-example">
+        <div className="legend-pill">
+          <span className="legend-pill-circle" style={{ background: soundTransit.lines['1-line'].color }}>1</span>
+          <span className="legend-pill-circle" style={{ background: soundTransit.lines['2-line'].color }}>2</span>
+          <span className="legend-pill-code">50</span>
+        </div>
+        <span className="legend-station-desc">Station</span>
+      </div>
+
+      <div className="legend-station-parts">
+        <div className="legend-part-item">
+          <span className="legend-pill-circle small" style={{ background: soundTransit.lines['1-line'].color }}>1</span>
+          <span className="legend-part-label">Line number</span>
+        </div>
+        <div className="legend-part-item">
+          <span className="legend-pill-code small">50</span>
+          <span className="legend-part-label">Stop code</span>
+        </div>
+      </div>
 
       {hasWalksheds && (
         <>
