@@ -161,6 +161,110 @@ LINE_2_CODES = {
 # Offset distance for parallel lines in shared segment
 OFFSET_METERS = 30
 
+# SDOT alignment descriptions for each line
+LINE1_DESCS = {"Central Link", "University Link", "North Link", "Airport Link", "Angle Lake"}
+
+
+def dist(a, b):
+    return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
+
+
+def get_coords(feat):
+    """Extract coordinates from a GeoJSON geometry."""
+    g = feat["geometry"]
+    if g["type"] == "LineString":
+        return list(g["coordinates"])
+    elif g["type"] == "MultiLineString":
+        return [c for part in g["coordinates"] for c in part]
+    return []
+
+
+def find_sdot_points_between(sdot_points, station_a, station_b, max_deviation=0.005):
+    """Find SDOT alignment points that lie between two stations.
+
+    Collects points whose latitude falls between the two stations (with some
+    tolerance) and that don't deviate too far from the straight line between them.
+    Returns the points sorted by distance along the A→B vector.
+    """
+    lng_a, lat_a = station_a
+    lng_b, lat_b = station_b
+
+    lat_min = min(lat_a, lat_b)
+    lat_max = max(lat_a, lat_b)
+    lng_min = min(lng_a, lng_b)
+    lng_max = max(lng_a, lng_b)
+
+    # Expand bounding box slightly to catch points near stations
+    pad = 0.002
+    lat_min -= pad
+    lat_max += pad
+    lng_min -= pad
+    lng_max += pad
+
+    # Direction vector A→B
+    dx = lng_b - lng_a
+    dy = lat_b - lat_a
+    seg_len = math.sqrt(dx * dx + dy * dy)
+    if seg_len == 0:
+        return []
+
+    candidates = []
+    for pt in sdot_points:
+        # Bounding box filter
+        if not (lat_min <= pt[1] <= lat_max and lng_min <= pt[0] <= lng_max):
+            continue
+
+        # Project point onto A→B line
+        t = ((pt[0] - lng_a) * dx + (pt[1] - lat_a) * dy) / (seg_len * seg_len)
+        if t < 0.05 or t > 0.95:  # skip points too close to endpoints
+            continue
+
+        # Perpendicular distance from A→B line
+        proj_lng = lng_a + t * dx
+        proj_lat = lat_a + t * dy
+        perp_dist = math.sqrt((pt[0] - proj_lng) ** 2 + (pt[1] - proj_lat) ** 2)
+
+        if perp_dist < max_deviation:
+            candidates.append((t, pt))
+
+    # Sort by position along segment and deduplicate close points
+    candidates.sort(key=lambda x: x[0])
+    result = []
+    for t, pt in candidates:
+        if not result or dist(result[-1], pt) > 0.0005:
+            result.append(pt)
+
+    return result
+
+
+def enrich_with_sdot(station_coords_list, sdot_points):
+    """Insert SDOT intermediate points between station pairs to add curvature."""
+    enriched = [station_coords_list[0]]
+    for i in range(len(station_coords_list) - 1):
+        a = station_coords_list[i]
+        b = station_coords_list[i + 1]
+        intermediates = find_sdot_points_between(sdot_points, a, b)
+        enriched.extend(intermediates)
+        enriched.append(b)
+    return enriched
+
+
+def chaikin(coords, iterations=3):
+    """Chaikin curve smoothing — subdivides segments for smooth curves.
+
+    Keeps first and last points fixed (station positions).
+    """
+    pts = list(coords)
+    for _ in range(iterations):
+        out = [pts[0]]
+        for i in range(len(pts) - 1):
+            p0, p1 = pts[i], pts[i + 1]
+            out.append([0.75 * p0[0] + 0.25 * p1[0], 0.75 * p0[1] + 0.25 * p1[1]])
+            out.append([0.25 * p0[0] + 0.75 * p1[0], 0.25 * p0[1] + 0.75 * p1[1]])
+        out.append(pts[-1])
+        pts = out
+    return pts
+
 
 def offset_polyline(coords, meters, side="left"):
     """Offset a polyline perpendicular to its travel direction.
@@ -208,6 +312,25 @@ def main():
     # Load raw SDOT data
     with open(os.path.join(ROOT, "data/raw/light-rail-stations.geojson")) as f:
         raw_stations = json.load(f)
+    with open(os.path.join(ROOT, "data/raw/light-rail-alignment.geojson")) as f:
+        raw_alignment = json.load(f)
+
+    # ── Collect all SDOT alignment points for route enrichment ──
+    sdot_existing = [
+        f for f in raw_alignment["features"]
+        if f["properties"].get("STATUS") == "Existing / Under Construction"
+    ]
+    line1_sdot_pts = []
+    east_sdot_pts = []
+    for f in sdot_existing:
+        desc = f["properties"].get("DESCRIPTIO", "")
+        pts = get_coords(f)
+        if desc in LINE1_DESCS:
+            line1_sdot_pts.extend(pts)
+        elif desc == "East Link":
+            east_sdot_pts.extend(pts)
+
+    print(f"SDOT points: {len(line1_sdot_pts)} Line 1, {len(east_sdot_pts)} East Link")
 
     # ── Build station coordinate index ──
     existing = [
@@ -227,19 +350,34 @@ def main():
         if name not in station_coords:
             station_coords[name] = [lng, lat]
 
-    # ── Build continuous line geometries from station coordinates ──
-    shared_coords = [station_coords[n] for n in LINE_1_ORDER[:SHARED_COUNT] if n in station_coords]
-    line1_south_coords = [station_coords[n] for n in LINE_1_ORDER[SHARED_COUNT - 1 :] if n in station_coords]
-    line2_east_coords = [station_coords[n] for n in LINE_2_ORDER[SHARED_COUNT - 1 :] if n in station_coords]
+    # ── Build enriched line geometries ──
+    # Start with station-to-station coordinates, then insert SDOT intermediate
+    # points for curvature, then apply Chaikin smoothing.
+    shared_stations = [station_coords[n] for n in LINE_1_ORDER[:SHARED_COUNT] if n in station_coords]
+    line1_south_stations = [station_coords[n] for n in LINE_1_ORDER[SHARED_COUNT - 1 :] if n in station_coords]
+    line2_east_stations = [station_coords[n] for n in LINE_2_ORDER[SHARED_COUNT - 1 :] if n in station_coords]
+
+    # Enrich with SDOT intermediate points
+    shared_enriched = enrich_with_sdot(shared_stations, line1_sdot_pts)
+    south_enriched = enrich_with_sdot(line1_south_stations, line1_sdot_pts)
+    east_enriched = enrich_with_sdot(line2_east_stations, east_sdot_pts)
+
+    # Apply Chaikin smoothing
+    shared_smooth = chaikin(shared_enriched, iterations=2)
+    south_smooth = chaikin(south_enriched, iterations=2)
+    east_smooth = chaikin(east_enriched, iterations=2)
+
+    print(f"Enriched: shared {len(shared_stations)}→{len(shared_enriched)}→{len(shared_smooth)} pts, "
+          f"south {len(line1_south_stations)}→{len(south_enriched)}→{len(south_smooth)} pts, "
+          f"east {len(line2_east_stations)}→{len(east_enriched)}→{len(east_smooth)} pts")
 
     # Offset shared segment: Line 1 west, Line 2 east
-    # Stations are ordered north→south, so "right" of travel = west, "left" = east
-    line1_shared = offset_polyline(shared_coords, OFFSET_METERS, side="right")  # west
-    line2_shared = offset_polyline(shared_coords, OFFSET_METERS, side="left")   # east
+    line1_shared = offset_polyline(shared_smooth, OFFSET_METERS, side="right")  # west
+    line2_shared = offset_polyline(shared_smooth, OFFSET_METERS, side="left")   # east
 
-    # Full line coordinates (join shared + exclusive, skip duplicate junction point)
-    line1_full = line1_shared + line1_south_coords[1:]
-    line2_full = line2_shared + line2_east_coords[1:]
+    # Full line coordinates
+    line1_full = line1_shared + south_smooth[1:]
+    line2_full = line2_shared + east_smooth[1:]
 
     line1_geojson = {
         "type": "FeatureCollection",
