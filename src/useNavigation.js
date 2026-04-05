@@ -37,11 +37,10 @@ export function useNavigation({ graphRef, selectedStationRef, currentLine, selec
 
       if (cooldown) return
 
+      // Only use horizontal scroll for navigation; vertical scroll is reserved
+      // for map zoom and must not trigger station changes.
       let arrowKey = null
-      if (Math.abs(accumY) > Math.abs(accumX)) {
-        if (accumY < -SCROLL_THRESHOLD) arrowKey = 'ArrowUp'
-        else if (accumY > SCROLL_THRESHOLD) arrowKey = 'ArrowDown'
-      } else {
+      if (Math.abs(accumX) > Math.abs(accumY)) {
         if (accumX < -SCROLL_THRESHOLD) arrowKey = 'ArrowLeft'
         else if (accumX > SCROLL_THRESHOLD) arrowKey = 'ArrowRight'
       }
