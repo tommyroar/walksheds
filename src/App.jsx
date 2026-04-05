@@ -189,13 +189,16 @@ export default function App() {
       if (cooldown) return
 
       let arrowKey = null
-      // Natural scroll: deltaY>0 = swipe up on trackpad = go south on map
+      // Map scroll direction to route navigation:
+      // Scroll/swipe toward top of screen → go north (up the route)
+      // deltaY < 0 = scroll toward top of screen (regardless of natural scroll setting,
+      // the OS normalizes deltaY so negative = toward top)
       if (Math.abs(accumY) > Math.abs(accumX)) {
-        if (accumY > SCROLL_THRESHOLD) arrowKey = 'ArrowUp'
-        else if (accumY < -SCROLL_THRESHOLD) arrowKey = 'ArrowDown'
+        if (accumY < -SCROLL_THRESHOLD) arrowKey = 'ArrowUp'
+        else if (accumY > SCROLL_THRESHOLD) arrowKey = 'ArrowDown'
       } else {
-        if (accumX > SCROLL_THRESHOLD) arrowKey = 'ArrowLeft'
-        else if (accumX < -SCROLL_THRESHOLD) arrowKey = 'ArrowRight'
+        if (accumX < -SCROLL_THRESHOLD) arrowKey = 'ArrowLeft'
+        else if (accumX > SCROLL_THRESHOLD) arrowKey = 'ArrowRight'
       }
 
       if (arrowKey && navigateDirection(arrowKey)) {
