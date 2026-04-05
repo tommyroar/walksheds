@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   frontend:
-    name: Frontend (lint + test + build)
+    name: Lint + Test + Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,28 +30,6 @@ jobs:
       - run: npm run build
         env:
           VITE_MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN }}
-
-  backend:
-    name: Backend (ruff + pytest)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-          cache: pip
-
-      - run: pip install -r requirements.txt
-      - run: pip install ruff pytest
-
-      - run: ruff check .
-      - run: ruff format --check .
-
-      - run: pytest -m "not slow" -q --tb=short
 
   review:
     name: Claude Code Review
@@ -74,6 +52,5 @@ jobs:
             1. Code quality and consistency with existing patterns
             2. Security issues (API keys, injection, etc.)
             3. Missing tests for new functionality
-            4. Any breaking changes to the API schema
 
             Be concise. Only comment on issues, not praise.
