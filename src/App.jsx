@@ -57,9 +57,16 @@ const SEATTLE_ZOOM = 11.5
 const WALKSHED_OPTIONS = [5, 10, 15]
 
 const WALKSHED_STYLES = {
-  15: { opacity: 0.10, outlineOpacity: 0.3 },
-  10: { opacity: 0.15, outlineOpacity: 0.4 },
-  5:  { opacity: 0.22, outlineOpacity: 0.6 },
+  light: {
+    15: { opacity: 0.12, outlineOpacity: 0.6, lineWidth: 2 },
+    10: { opacity: 0.18, outlineOpacity: 0.7, lineWidth: 2.5 },
+    5:  { opacity: 0.25, outlineOpacity: 0.85, lineWidth: 3 },
+  },
+  dark: {
+    15: { opacity: 0.20, outlineOpacity: 0.7, lineWidth: 2.5 },
+    10: { opacity: 0.28, outlineOpacity: 0.8, lineWidth: 3 },
+    5:  { opacity: 0.35, outlineOpacity: 0.95, lineWidth: 3.5 },
+  },
 }
 
 const LINE_COLORS = {
@@ -67,7 +74,8 @@ const LINE_COLORS = {
   '2-line': { color: '#0082C8', label: '2 Line' },
 }
 
-const WALKSHED_ACCENT = '#2D2B6B'
+const WALKSHED_ACCENT_LIGHT = '#3A37A0'
+const WALKSHED_ACCENT_DARK = '#7DF9FF'
 
 function getLargestEnabledBounds(walksheds, enabledWalksheds) {
   const sorted = [...enabledWalksheds].sort((a, b) => b - a)
@@ -122,6 +130,7 @@ export default function App() {
   const mapRef = useRef(null)
   const selectedStationRef = useRef(null)
   const graphRef = useRef(null)
+  const isDraggingRef = useRef(false)
 
   useEffect(() => {
     const base = import.meta.env.BASE_URL
@@ -201,7 +210,14 @@ export default function App() {
     }
   }, [enabledWalksheds, walksheds])
 
+  const handleDragStart = useCallback(() => { isDraggingRef.current = true }, [])
+  const handleDragEnd = useCallback(() => { isDraggingRef.current = true }, [])
+
   const handleMapClick = useCallback((e) => {
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false
+      return
+    }
     const features = e.features
     if (features && features.length > 0) {
       const f = features[0]
@@ -343,6 +359,8 @@ export default function App() {
         mapboxAccessToken={MAPBOX_TOKEN}
         interactiveLayerIds={mapLoaded ? ['station-circles'] : []}
         onClick={handleMapClick}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onLoad={handleMapLoad}
@@ -360,7 +378,8 @@ export default function App() {
         {walkshedLayers.map((min) => {
           const data = walksheds[min]
           if (!mapLoaded || !data || !enabledWalksheds.has(min)) return null
-          const style = WALKSHED_STYLES[min]
+          const accent = darkMode ? WALKSHED_ACCENT_DARK : WALKSHED_ACCENT_LIGHT
+          const style = (darkMode ? WALKSHED_STYLES.dark : WALKSHED_STYLES.light)[min]
           const lineData = polygonToLine(data)
           return (
             <span key={`walkshed-group-${min}`}>
@@ -368,12 +387,12 @@ export default function App() {
                 <Layer
                   id={`walkshed-fill-${min}`}
                   type="fill"
-                  paint={{ 'fill-color': WALKSHED_ACCENT, 'fill-opacity': style.opacity }}
+                  paint={{ 'fill-color': accent, 'fill-opacity': style.opacity }}
                 />
                 <Layer
                   id={`walkshed-outline-${min}`}
                   type="line"
-                  paint={{ 'line-color': WALKSHED_ACCENT, 'line-width': min === 5 ? 2 : 1.5, 'line-opacity': style.outlineOpacity }}
+                  paint={{ 'line-color': accent, 'line-width': style.lineWidth, 'line-opacity': style.outlineOpacity }}
                 />
               </Source>
               <Source id={`walkshed-label-${min}`} type="geojson" data={lineData}>
@@ -383,15 +402,15 @@ export default function App() {
                   layout={{
                     'symbol-placement': 'line',
                     'text-field': `${min} min`,
-                    'text-size': 11,
-                    'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+                    'text-size': 13,
+                    'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'],
                     'symbol-spacing': 150,
                     'text-keep-upright': true,
                   }}
                   paint={{
-                    'text-color': WALKSHED_ACCENT,
-                    'text-halo-color': darkMode ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.8)',
-                    'text-halo-width': 1.5,
+                    'text-color': accent,
+                    'text-halo-color': darkMode ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)',
+                    'text-halo-width': 2,
                   }}
                 />
               </Source>
@@ -449,7 +468,7 @@ export default function App() {
       <LineLegend
         lineColors={LINE_COLORS}
         enabledWalksheds={enabledWalksheds}
-        walkshedAccent={WALKSHED_ACCENT}
+        walkshedAccent={darkMode ? WALKSHED_ACCENT_DARK : WALKSHED_ACCENT_LIGHT}
         onWalkshedToggle={handleWalkshedToggle}
         darkMode={darkMode}
         onDarkModeToggle={() => setDarkMode(d => !d)}
