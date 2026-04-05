@@ -69,6 +69,24 @@ const LINE_COLORS = {
 
 const WALKSHED_ACCENT = '#2D2B6B'
 
+function getLargestEnabledBounds(walksheds, enabledWalksheds) {
+  const sorted = [...enabledWalksheds].sort((a, b) => b - a)
+  for (const min of sorted) {
+    const ws = walksheds[min]
+    const coords = ws?.features?.[0]?.geometry?.coordinates?.[0]
+    if (!coords) continue
+    let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity
+    for (const [cLng, cLat] of coords) {
+      if (cLng < minLng) minLng = cLng
+      if (cLng > maxLng) maxLng = cLng
+      if (cLat < minLat) minLat = cLat
+      if (cLat > maxLat) maxLat = cLat
+    }
+    return [[minLng, minLat], [maxLng, maxLat]]
+  }
+  return null
+}
+
 function polygonToLine(geojson) {
   if (!geojson?.features?.length) return geojson
   return {
@@ -167,24 +185,21 @@ export default function App() {
       if (selectedStationRef.current?.name !== name) return
       setWalksheds(results)
 
-      // Fit map to 15-min walkshed bounds with buffer
-      const ws15 = results[15]
-      if (ws15?.features?.[0]?.geometry?.coordinates?.[0]) {
-        const coords = ws15.features[0].geometry.coordinates[0]
-        let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity
-        for (const [cLng, cLat] of coords) {
-          if (cLng < minLng) minLng = cLng
-          if (cLng > maxLng) maxLng = cLng
-          if (cLat < minLat) minLat = cLat
-          if (cLat > maxLat) maxLat = cLat
-        }
-        mapRef.current?.fitBounds(
-          [[minLng, minLat], [maxLng, maxLat]],
-          { padding: 60, duration: 600 }
-        )
+      const bounds = getLargestEnabledBounds(results, enabledWalksheds)
+      if (bounds) {
+        mapRef.current?.fitBounds(bounds, { padding: 60, duration: 600 })
       }
     })
-  }, [stationsData])
+  }, [stationsData, enabledWalksheds])
+
+  // Re-fit map when walkshed toggles change
+  useEffect(() => {
+    if (!Object.keys(walksheds).length) return
+    const bounds = getLargestEnabledBounds(walksheds, enabledWalksheds)
+    if (bounds) {
+      mapRef.current?.fitBounds(bounds, { padding: 60, duration: 600 })
+    }
+  }, [enabledWalksheds, walksheds])
 
   const handleMapClick = useCallback((e) => {
     const features = e.features
