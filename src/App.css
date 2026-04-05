@@ -12,7 +12,7 @@
   bottom: 32px;
   left: 16px;
   z-index: 10;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(0, 0, 0, 0.1);
@@ -20,11 +20,8 @@
   padding: 14px 18px;
   max-height: 50vh;
   overflow-y: auto;
-}
-
-.app.dark .line-legend {
-  background: rgba(20, 20, 30, 0.88);
-  border-color: rgba(255, 255, 255, 0.08);
+  color: #333;
+  color-scheme: light;
 }
 
 /* ── Dark mode toggle ── */
@@ -36,26 +33,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: rgba(0, 0, 0, 0.2);
   cursor: pointer;
-  transition: color 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 
 .legend-dark-toggle:hover {
-  color: rgba(0, 0, 0, 0.5);
-}
-
-.app.dark .legend-dark-toggle {
-  color: rgba(255, 255, 255, 0.2);
-}
-
-.app.dark .legend-dark-toggle:hover {
-  color: rgba(255, 255, 255, 0.5);
+  opacity: 0.7;
 }
 
 .legend-title {
@@ -157,15 +145,6 @@
   margin: 10px 0;
 }
 
-.app.dark .legend-title { color: rgba(255, 255, 255, 0.8); }
-.app.dark .legend-line-label { color: rgba(255, 255, 255, 0.8); }
-.app.dark .legend-station-desc { color: rgba(255, 255, 255, 0.8); }
-.app.dark .legend-pill { background: #2a2a3a; border-color: rgba(255, 255, 255, 0.3); }
-.app.dark .legend-pill-code { background: rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.8); }
-.app.dark .legend-walkshed-label { color: rgba(255, 255, 255, 0.5); }
-.app.dark .legend-walkshed-item.dimmed .legend-walkshed-label { color: rgba(255, 255, 255, 0.25); }
-.app.dark .legend-divider { background: rgba(255, 255, 255, 0.1); }
-.app.dark .legend-walkshed-item:hover { background: rgba(255, 255, 255, 0.05); }
 
 /* ── Walkshed toggles in legend ── */
 
