@@ -1,0 +1,386 @@
+.app {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ── Line Legend ── */
+
+.line-legend {
+  position: absolute;
+  bottom: 32px;
+  left: 16px;
+  z-index: 10;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 14px 18px;
+  max-height: 50vh;
+  overflow-y: auto;
+  color-scheme: light;
+}
+
+.app.dark .line-legend {
+  background: #1a1a24;
+  border-color: rgba(255, 255, 255, 0.1);
+  color-scheme: dark;
+}
+
+.app.dark .line-legend {
+  background: rgba(20, 20, 30, 0.88);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Dark mode toggle ── */
+
+.legend-dark-toggle {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.legend-dark-toggle:hover {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.app.dark .legend-dark-toggle {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.app.dark .legend-dark-toggle:hover {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.legend-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 8px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.legend-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.legend-line-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-line-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.legend-line-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #333;
+}
+
+/* ── Station pill example ── */
+
+.legend-station-example {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.legend-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: #fff;
+  border: 1.5px solid #333;
+  border-radius: 14px;
+  padding: 2px 3px;
+}
+
+.legend-pill-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.legend-pill-code {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 18px;
+  background: #e8e8e8;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #333;
+  padding: 0 3px;
+}
+
+.legend-station-desc {
+  font-size: 12px;
+  font-weight: 500;
+  color: #333;
+}
+
+.legend-divider {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.1);
+  margin: 10px 0;
+}
+
+.app.dark .legend-title { color: rgba(255, 255, 255, 0.8); }
+.app.dark .legend-line-label { color: rgba(255, 255, 255, 0.8); }
+.app.dark .legend-station-desc { color: rgba(255, 255, 255, 0.8); }
+.app.dark .legend-pill { background: #2a2a3a; border-color: rgba(255, 255, 255, 0.3); }
+.app.dark .legend-pill-code { background: rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.8); }
+.app.dark .legend-walkshed-label { color: rgba(255, 255, 255, 0.5); }
+.app.dark .legend-walkshed-item.dimmed .legend-walkshed-label { color: rgba(255, 255, 255, 0.25); }
+.app.dark .legend-divider { background: rgba(255, 255, 255, 0.1); }
+.app.dark .legend-walkshed-item:hover { background: rgba(255, 255, 255, 0.05); }
+
+/* ── Walkshed toggles in legend ── */
+
+.legend-walkshed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.legend-walkshed-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  margin: 0 -6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.legend-walkshed-item:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.legend-walkshed-item.dimmed {
+  opacity: 0.35;
+}
+
+.legend-walkshed-item.dimmed:hover {
+  opacity: 0.55;
+}
+
+.legend-swatch-walkshed {
+  width: 16px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+}
+
+.legend-walkshed-label {
+  font-size: 12px;
+  color: #555;
+  white-space: nowrap;
+}
+
+.legend-walkshed-item.dimmed .legend-walkshed-label {
+  color: #999;
+}
+
+/* ── Station pill (compact → expanded via CSS transition) ── */
+
+.station-pill {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: #ffffff;
+  border: 1.5px solid #333;
+  border-radius: 14px;
+  padding: 2px 3px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
+  pointer-events: auto;
+  cursor: default;
+  overflow: hidden;
+  transition: padding 0.25s ease, gap 0.25s ease, box-shadow 0.25s ease, border-width 0.25s ease;
+}
+
+.station-pill.expanded {
+  gap: 3px;
+  padding: 3px 4px;
+  border-width: 2px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+
+.app.dark .station-pill {
+  background: #2a2a3a;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.pill-lines {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.pill-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: width 0.25s ease, height 0.25s ease, font-size 0.25s ease;
+}
+
+.station-pill.expanded .pill-circle {
+  width: 22px;
+  height: 22px;
+  font-size: 13px;
+}
+
+.pill-code {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 18px;
+  background: #e8e8e8;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #333;
+  padding: 0 3px;
+  flex-shrink: 0;
+  transition: min-width 0.25s ease, height 0.25s ease, font-size 0.25s ease;
+}
+
+.station-pill.expanded .pill-code {
+  min-width: 26px;
+  height: 22px;
+  font-size: 12px;
+  border-radius: 5px;
+}
+
+.app.dark .pill-code {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ddd;
+}
+
+.pill-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-width 0.3s ease, opacity 0.2s ease, padding 0.25s ease;
+  padding: 0;
+}
+
+.station-pill.expanded .pill-name {
+  max-width: 300px;
+  opacity: 1;
+  padding: 0 6px 0 4px;
+}
+
+.app.dark .pill-name {
+  color: #ddd;
+}
+
+.pill-hints {
+  display: flex;
+  gap: 4px;
+  margin-left: 2px;
+  padding-left: 6px;
+  border-left: 1px solid #ddd;
+}
+
+.app.dark .pill-hints {
+  border-left-color: rgba(255, 255, 255, 0.15);
+}
+
+.pill-hint {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #666;
+}
+
+.app.dark .pill-hint {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.pill-hint kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 11px;
+  font-family: inherit;
+  color: #333;
+  background: #f5f5f5;
+}
+
+.app.dark .pill-hint kbd {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ddd;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Mapbox overrides ── */
+
+.mapboxgl-ctrl-attrib {
+  background: rgba(0, 0, 0, 0.5) !important;
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.mapboxgl-ctrl-attrib a {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
