@@ -106,9 +106,10 @@ export default function App() {
   const graphRef = useRef(null)
 
   useEffect(() => {
-    fetch('/line1-alignment.geojson').then(r => r.json()).then(setLine1Data)
-    fetch('/line2-alignment.geojson').then(r => r.json()).then(setLine2Data)
-    fetch('/all-stations.geojson').then(r => r.json()).then(setStationsData)
+    const base = import.meta.env.BASE_URL
+    fetch(`${base}line1-alignment.geojson`).then(r => r.json()).then(setLine1Data)
+    fetch(`${base}line2-alignment.geojson`).then(r => r.json()).then(setLine2Data)
+    fetch(`${base}all-stations.geojson`).then(r => r.json()).then(setStationsData)
   }, [])
 
   useEffect(() => {
