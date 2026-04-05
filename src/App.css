@@ -160,6 +160,8 @@
 .app.dark .legend-title { color: rgba(255, 255, 255, 0.8); }
 .app.dark .legend-line-label { color: rgba(255, 255, 255, 0.8); }
 .app.dark .legend-station-desc { color: rgba(255, 255, 255, 0.8); }
+.app.dark .legend-pill { background: #2a2a3a; border-color: rgba(255, 255, 255, 0.3); }
+.app.dark .legend-pill-code { background: rgba(255, 255, 255, 0.12); color: rgba(255, 255, 255, 0.8); }
 .app.dark .legend-walkshed-label { color: rgba(255, 255, 255, 0.5); }
 .app.dark .legend-walkshed-item.dimmed .legend-walkshed-label { color: rgba(255, 255, 255, 0.25); }
 .app.dark .legend-divider { background: rgba(255, 255, 255, 0.1); }
