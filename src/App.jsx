@@ -332,7 +332,12 @@ export default function App() {
         onLoad={handleMapLoad}
         projection="mercator"
         config={{
-          basemap: { theme: 'default', lightPreset: 'day' },
+          basemap: {
+            theme: 'default',
+            lightPreset: 'day',
+            showPointOfInterestLabels: true,
+            densityPointOfInterestLabels: 5,
+          },
         }}
       >
         {/* Walkshed isochrones */}
