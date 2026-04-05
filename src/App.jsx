@@ -54,6 +54,7 @@ export default function App() {
   const [enabledWalksheds, setEnabledWalksheds] = useState(new Set([5, 10, 15]))
   const [currentLine, setCurrentLine] = useState(null)
   const [junctionHints, setJunctionHints] = useState([])
+  const [darkMode, setDarkMode] = useState(false)
   const [line1Data, setLine1Data] = useState(null)
   const [line2Data, setLine2Data] = useState(null)
   const [stationsData, setStationsData] = useState(null)
@@ -81,6 +82,13 @@ export default function App() {
   }, [mapLoaded, stationsData])
 
   const handleMapLoad = useCallback(() => setMapLoaded(true), [])
+
+  // Apply dark/light mode to map
+  useEffect(() => {
+    const map = mapRef.current?.getMap()
+    if (!map || !mapLoaded) return
+    map.setConfigProperty('basemap', 'lightPreset', darkMode ? 'dusk' : 'day')
+  }, [darkMode, mapLoaded])
 
   const handleWalkshedToggle = useCallback((minutes) => {
     setEnabledWalksheds(prev => {
@@ -265,7 +273,7 @@ export default function App() {
   const walkshedLayers = [15, 10, 5]
 
   return (
-    <div className="app">
+    <div className={`app ${darkMode ? 'dark' : ''}`}>
       <Map
         ref={mapRef}
         initialViewState={{
@@ -320,7 +328,7 @@ export default function App() {
                   }}
                   paint={{
                     'text-color': WALKSHED_ACCENT,
-                    'text-halo-color': 'rgba(255,255,255,0.8)',
+                    'text-halo-color': darkMode ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.8)',
                     'text-halo-width': 1.5,
                   }}
                 />
@@ -400,6 +408,8 @@ export default function App() {
         enabledWalksheds={enabledWalksheds}
         walkshedAccent={WALKSHED_ACCENT}
         onWalkshedToggle={handleWalkshedToggle}
+        darkMode={darkMode}
+        onDarkModeToggle={() => setDarkMode(d => !d)}
       />
     </div>
   )
