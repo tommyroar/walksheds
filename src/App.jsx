@@ -360,7 +360,7 @@ export default function App() {
               id="station-circles"
               type="symbol"
               layout={{
-                'icon-image': ['concat', 'station-', ['get', 'lines'], '-', ['to-string', ['get', 'stopCode']]],
+                'icon-image': ['concat', 'station-', darkMode ? 'dark' : 'light', '-', ['get', 'lines'], '-', ['to-string', ['get', 'stopCode']]],
                 'icon-size': 0.9,
                 'icon-allow-overlap': true,
                 'icon-ignore-placement': true,

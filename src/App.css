@@ -236,6 +236,34 @@
   animation: pill-expand 0.2s ease-out;
 }
 
+.app.dark .station-expanded-pill {
+  background: #2a2a3a;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.app.dark .expanded-pill-code {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ddd;
+}
+
+.app.dark .expanded-pill-name {
+  color: #ddd;
+}
+
+.app.dark .expanded-pill-hint {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.app.dark .expanded-pill-hint kbd {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ddd;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.app.dark .expanded-pill-hints {
+  border-left-color: rgba(255, 255, 255, 0.15);
+}
+
 @keyframes pill-expand {
   from { transform: scale(0.8); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
