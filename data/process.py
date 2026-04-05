@@ -94,24 +94,16 @@ LINE_2_ORDER = [
     "Downtown Redmond Station",
 ]
 
-# Shared segment: first 13 stations (Lynnwood through Intl District)
 SHARED_COUNT = 13
 SHARED_NAMES = set(LINE_1_ORDER[:SHARED_COUNT])
 
 TACOMA_KW = [
-    "Commerce",
-    "Theater District",
-    "Convention Center",
-    "Union Station",
-    "Tacoma Dome",
-    "South 25th",
+    "Commerce", "Theater District", "Convention Center",
+    "Union Station", "Tacoma Dome", "South 25th",
 ]
 
-# ── Stop codes (from Sound Transit website) ──
-# Shared stations use the same code for both lines
-# Line-specific stations use line-prefixed codes (1xx for Line 1, 2xx for Line 2)
+# ── Stop codes ──
 STOP_CODES = {
-    # Shared
     "Lynnwood City Center Station": 40,
     "Mountlake Terrace Station": 41,
     "Shoreline South/148th Station": 42,
@@ -128,50 +120,130 @@ STOP_CODES = {
 }
 
 LINE_1_CODES = {
-    "Stadium Station": 54,
-    "SODO Station": 55,
-    "Beacon Hill Station": 56,
-    "Mount Baker Station": 57,
-    "Columbia City Station": 58,
-    "Othello Station": 60,
-    "Rainier Beach Station": 61,
-    "Tukwila International Blvd Station": 63,
-    "Airport / SeaTac Station": 64,
-    "Angle Lake Station": 65,
-    "Kent Des Moines Station": 66,
-    "Star Lake Station": 67,
-    "Federal Way Downtown Station": 68,
+    "Stadium Station": 54, "SODO Station": 55, "Beacon Hill Station": 56,
+    "Mount Baker Station": 57, "Columbia City Station": 58,
+    "Othello Station": 60, "Rainier Beach Station": 61,
+    "Tukwila International Blvd Station": 63, "Airport / SeaTac Station": 64,
+    "Angle Lake Station": 65, "Kent Des Moines Station": 66,
+    "Star Lake Station": 67, "Federal Way Downtown Station": 68,
 }
 
 LINE_2_CODES = {
-    "Judkins Park Station": 54,
-    "Mercer Island Station": 55,
-    "South Bellevue Station": 56,
-    "East Main Station": 57,
-    "Bellevue Downtown Station": 58,
-    "Wilburton Station": 59,
-    "Spring District/120th Station": 60,
-    "Bel-Red/130th Station": 61,
-    "Overlake Village Station": 62,
-    "Redmond Technology Center Station": 63,
-    "Marymoor Village Station": 64,
-    "Downtown Redmond Station": 65,
+    "Judkins Park Station": 54, "Mercer Island Station": 55,
+    "South Bellevue Station": 56, "East Main Station": 57,
+    "Bellevue Downtown Station": 58, "Wilburton Station": 59,
+    "Spring District/120th Station": 60, "Bel-Red/130th Station": 61,
+    "Overlake Village Station": 62, "Redmond Technology Center Station": 63,
+    "Marymoor Village Station": 64, "Downtown Redmond Station": 65,
 }
 
-# Offset distance for parallel lines in shared segment
 OFFSET_METERS = 30
+INTL_DISTRICT_LAT = 47.598
+
+
+# ── Geometry utilities ──
+
+def get_coords(feat):
+    """Extract coordinates from a LineString or MultiLineString feature."""
+    g = feat["geometry"]
+    if g["type"] == "LineString":
+        return list(g["coordinates"])
+    elif g["type"] == "MultiLineString":
+        return [c for part in g["coordinates"] for c in part]
+    return []
+
+
+def dist(a, b):
+    return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
+
+
+def build_route(polylines):
+    """Build a continuous route from disjoint polylines.
+
+    1. Orient all polylines north→south
+    2. Deduplicate parallel tracks (keep one per latitude band)
+    3. Sort by center latitude north→south
+    4. Concatenate, connecting endpoints
+    """
+    if not polylines:
+        return []
+
+    # Orient north→south
+    for i, pl in enumerate(polylines):
+        if pl[0][1] < pl[-1][1]:
+            polylines[i] = list(reversed(pl))
+
+    # Deduplicate parallel tracks: keep one polyline per latitude band
+    polylines.sort(key=len, reverse=True)
+    kept = []
+    for pl in polylines:
+        lat_min = min(p[1] for p in pl)
+        lat_max = max(p[1] for p in pl)
+        coverage = lat_max - lat_min
+        overlaps = False
+        for k in kept:
+            k_min = min(p[1] for p in k)
+            k_max = max(p[1] for p in k)
+            overlap = min(lat_max, k_max) - max(lat_min, k_min)
+            if coverage > 0 and overlap / coverage > 0.5:
+                overlaps = True
+                break
+        if not overlaps:
+            kept.append(pl)
+
+    # Sort north→south by center latitude
+    kept.sort(key=lambda pl: -(sum(p[1] for p in pl) / len(pl)))
+
+    # Concatenate, connecting closest endpoints
+    route = list(kept[0])
+    for i in range(1, len(kept)):
+        end = route[-1]
+        d_start = dist(end, kept[i][0])
+        d_end = dist(end, kept[i][-1])
+        if d_end < d_start:
+            kept[i] = list(reversed(kept[i]))
+        route.extend(kept[i])
+
+    return route
+
+
+def build_east_route(polylines):
+    """Build East Link route, sorted west→east."""
+    if not polylines:
+        return []
+
+    polylines.sort(key=len, reverse=True)
+    kept = []
+    for pl in polylines:
+        center_lng = sum(p[0] for p in pl) / len(pl)
+        overlaps = False
+        for k in kept:
+            k_center = sum(p[0] for p in k) / len(k)
+            if abs(center_lng - k_center) < 0.005 and len(pl) < len(k) * 1.5:
+                overlaps = True
+                break
+        if not overlaps:
+            kept.append(pl)
+
+    kept.sort(key=lambda pl: sum(p[0] for p in pl) / len(pl))
+
+    route = list(kept[0])
+    for i in range(1, len(kept)):
+        end = route[-1]
+        d_start = dist(end, kept[i][0])
+        d_end = dist(end, kept[i][-1])
+        if d_end < d_start:
+            kept[i] = list(reversed(kept[i]))
+        route.extend(kept[i])
+
+    return route
 
 
 def offset_polyline(coords, meters, side="left"):
-    """Offset a polyline perpendicular to its travel direction.
-    'left' = left of travel direction (west for a south-bound line).
-    'right' = right of travel direction (east for a south-bound line).
-    Line 1 is always left/west, Line 2 is always right/east.
-    """
+    """Offset a polyline perpendicular to its direction."""
     sign = -1 if side == "left" else 1
     result = []
     n = len(coords)
-
     for i in range(n):
         if i == 0:
             dx = coords[1][0] - coords[0][0]
@@ -182,176 +254,149 @@ def offset_polyline(coords, meters, side="left"):
         else:
             dx = coords[i + 1][0] - coords[i - 1][0]
             dy = coords[i + 1][1] - coords[i - 1][1]
-
         length = math.sqrt(dx * dx + dy * dy)
         if length == 0:
             result.append(list(coords[i]))
             continue
-
-        # Perpendicular vector (90° clockwise for 'right')
         px = sign * dy / length
         py = sign * (-dx) / length
-
         lng, lat = coords[i]
-        lat_rad = math.radians(lat)
-        m_per_deg_lng = 111320 * math.cos(lat_rad)
-        m_per_deg_lat = 110540
-
-        result.append([
-            lng + px * meters / m_per_deg_lng,
-            lat + py * meters / m_per_deg_lat,
-        ])
+        m_lng = 111320 * math.cos(math.radians(lat))
+        m_lat = 110540
+        result.append([lng + px * meters / m_lng, lat + py * meters / m_lat])
     return result
 
 
 def main():
-    # Load raw SDOT data
+    with open(os.path.join(ROOT, "data/raw/light-rail-alignment.geojson")) as f:
+        alignment = json.load(f)
     with open(os.path.join(ROOT, "data/raw/light-rail-stations.geojson")) as f:
         raw_stations = json.load(f)
 
-    # ── Build station coordinate index ──
     existing = [
-        feat
-        for feat in raw_stations["features"]
-        if feat["properties"].get("STATUS") == "Existing / Under Construction"
-        and not any(kw in list(feat["properties"].values())[2] for kw in TACOMA_KW)
+        f for f in alignment["features"]
+        if f["properties"].get("STATUS") == "Existing / Under Construction"
     ]
 
-    station_coords = {}
-    for feat in existing:
-        raw_name = list(feat["properties"].values())[2]
-        name = NAME_MAP.get(raw_name, raw_name)
-        station_coords[name] = feat["geometry"]["coordinates"]
+    # ── Build Line 1 route from SDOT curved segments ──
+    LINE1_DESCS = {"Central Link", "University Link", "North Link", "Airport Link", "Angle Lake"}
+    line1_polylines = [
+        get_coords(f) for f in existing
+        if f["properties"].get("DESCRIPTIO") in LINE1_DESCS and len(get_coords(f)) >= 2
+    ]
+    full_line1 = build_route(line1_polylines)
 
+    # ── Build East Link route ──
+    east_polylines = [
+        get_coords(f) for f in existing
+        if f["properties"].get("DESCRIPTIO") == "East Link" and len(get_coords(f)) >= 2
+    ]
+    east_route = build_east_route(east_polylines)
+
+    # ── Split Line 1 at International District for shared/south sections ──
+    split_idx = next(
+        (i for i, p in enumerate(full_line1) if p[1] < INTL_DISTRICT_LAT),
+        len(full_line1),
+    )
+    shared_section = full_line1[:split_idx]
+    south_section = full_line1[split_idx - 1:]  # include junction point
+
+    # ── Offset shared section: Line 1 west, Line 2 east ──
+    line1_shared = offset_polyline(shared_section, OFFSET_METERS, "right")   # west
+    line2_shared = offset_polyline(shared_section, OFFSET_METERS, "left")    # east
+
+    line1_coords = line1_shared + south_section[1:]
+    line2_coords = line2_shared + east_route
+
+    # ── Build station index ──
+    station_existing = [
+        f for f in raw_stations["features"]
+        if f["properties"].get("STATUS") == "Existing / Under Construction"
+        and not any(kw in list(f["properties"].values())[2] for kw in TACOMA_KW)
+    ]
+    station_coords = {}
+    for f in station_existing:
+        raw_name = list(f["properties"].values())[2]
+        name = NAME_MAP.get(raw_name, raw_name)
+        station_coords[name] = f["geometry"]["coordinates"]
     for name, lng, lat in MISSING_STATIONS:
         if name not in station_coords:
             station_coords[name] = [lng, lat]
 
-    # ── Build continuous line geometries from station coordinates ──
-    shared_coords = [station_coords[n] for n in LINE_1_ORDER[:SHARED_COUNT] if n in station_coords]
-    line1_south_coords = [station_coords[n] for n in LINE_1_ORDER[SHARED_COUNT - 1 :] if n in station_coords]
-    line2_east_coords = [station_coords[n] for n in LINE_2_ORDER[SHARED_COUNT - 1 :] if n in station_coords]
-
-    # Offset shared segment: Line 1 west, Line 2 east
-    # Stations are ordered north→south, so "right" of travel = west, "left" = east
-    line1_shared = offset_polyline(shared_coords, OFFSET_METERS, side="right")  # west
-    line2_shared = offset_polyline(shared_coords, OFFSET_METERS, side="left")   # east
-
-    # Full line coordinates (join shared + exclusive, skip duplicate junction point)
-    line1_full = line1_shared + line1_south_coords[1:]
-    line2_full = line2_shared + line2_east_coords[1:]
-
-    line1_geojson = {
-        "type": "FeatureCollection",
-        "features": [
-            {
-                "type": "Feature",
-                "properties": {"line": "1-line"},
-                "geometry": {"type": "LineString", "coordinates": line1_full},
-            }
-        ],
-    }
-
-    line2_geojson = {
-        "type": "FeatureCollection",
-        "features": [
-            {
-                "type": "Feature",
-                "properties": {"line": "2-line"},
-                "geometry": {"type": "LineString", "coordinates": line2_full},
-            }
-        ],
-    }
-
     # ── Build station GeoJSON ──
-    # Shared stations get a SINGLE marker centered between the two offset lines.
-    # Exclusive stations use their actual coordinates.
-    features = []
-
     def get_stop_code(name, line_id):
         if name in STOP_CODES:
             return STOP_CODES[name]
-        if line_id == "1-line" and name in LINE_1_CODES:
-            return LINE_1_CODES[name]
-        if line_id == "2-line" and name in LINE_2_CODES:
-            return LINE_2_CODES[name]
+        if line_id == "1-line":
+            return LINE_1_CODES.get(name)
+        if line_id == "2-line":
+            return LINE_2_CODES.get(name)
         return None
 
-    # Shared stations: single centered marker
+    features = []
     for name in LINE_1_ORDER[:SHARED_COUNT]:
         if name not in station_coords:
-            print(f"WARNING: Missing coords for {name}")
             continue
-        # Center between the two offset positions
-        coords = station_coords[name]  # original centerline position
-        code = get_stop_code(name, "1-line")
         features.append({
             "type": "Feature",
             "properties": {
-                "name": name,
-                "line": "1-line",
-                "stopCode": code,
-                "shared": True,
-                "lines": "1,2",
+                "name": name, "line": "1-line",
+                "stopCode": get_stop_code(name, "1-line"),
+                "shared": True, "lines": "1,2",
             },
-            "geometry": {"type": "Point", "coordinates": coords},
+            "geometry": {"type": "Point", "coordinates": station_coords[name]},
         })
-
-    # Line 1 exclusive stations (south of junction)
     for name in LINE_1_ORDER[SHARED_COUNT:]:
         if name not in station_coords:
-            print(f"WARNING: Missing coords for {name}")
             continue
-        code = get_stop_code(name, "1-line")
         features.append({
             "type": "Feature",
             "properties": {
-                "name": name,
-                "line": "1-line",
-                "stopCode": code,
-                "shared": False,
-                "lines": "1",
+                "name": name, "line": "1-line",
+                "stopCode": get_stop_code(name, "1-line"),
+                "shared": False, "lines": "1",
             },
             "geometry": {"type": "Point", "coordinates": station_coords[name]},
         })
-
-    # Line 2 exclusive stations (east of junction)
     for name in LINE_2_ORDER[SHARED_COUNT:]:
         if name not in station_coords:
-            print(f"WARNING: Missing coords for {name}")
             continue
-        code = get_stop_code(name, "2-line")
         features.append({
             "type": "Feature",
             "properties": {
-                "name": name,
-                "line": "2-line",
-                "stopCode": code,
-                "shared": False,
-                "lines": "2",
+                "name": name, "line": "2-line",
+                "stopCode": get_stop_code(name, "2-line"),
+                "shared": False, "lines": "2",
             },
             "geometry": {"type": "Point", "coordinates": station_coords[name]},
         })
-
-    stations_geojson = {"type": "FeatureCollection", "features": features}
 
     # ── Write output ──
     public = os.path.join(ROOT, "public")
     os.makedirs(public, exist_ok=True)
 
-    for name, data in [
-        ("line1-alignment", line1_geojson),
-        ("line2-alignment", line2_geojson),
-        ("all-stations", stations_geojson),
+    for fname, coords, line_prop in [
+        ("line1-alignment", line1_coords, "1-line"),
+        ("line2-alignment", line2_coords, "2-line"),
     ]:
-        path = os.path.join(public, f"{name}.geojson")
-        with open(path, "w") as f:
-            json.dump(data, f)
+        geojson = {
+            "type": "FeatureCollection",
+            "features": [{
+                "type": "Feature",
+                "properties": {"line": line_prop},
+                "geometry": {"type": "LineString", "coordinates": coords},
+            }],
+        }
+        with open(os.path.join(public, f"{fname}.geojson"), "w") as f:
+            json.dump(geojson, f)
+
+    with open(os.path.join(public, "all-stations.geojson"), "w") as f:
+        json.dump({"type": "FeatureCollection", "features": features}, f)
 
     unique = set(feat["properties"]["name"] for feat in features)
     print(f"Stations: {len(features)} features ({len(unique)} unique)")
-    print(f"Line 1: {len(line1_full)} points")
-    print(f"Line 2: {len(line2_full)} points")
+    print(f"Line 1: {len(line1_coords)} pts ({len(shared_section)} shared + {len(south_section)} south)")
+    print(f"Line 2: {len(line2_coords)} pts ({len(shared_section)} shared + {len(east_route)} east)")
     print(f"Shared offset: {OFFSET_METERS}m (Line 1 west, Line 2 east)")
 
 
