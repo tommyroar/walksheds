@@ -13,9 +13,9 @@ export const WALKSHED_STYLES = {
     5:  { opacity: 0.25, outlineOpacity: 0.85, lineWidth: 3 },
   },
   dark: {
-    15: { opacity: 0.20, outlineOpacity: 0.7, lineWidth: 2.5 },
-    10: { opacity: 0.28, outlineOpacity: 0.8, lineWidth: 3 },
-    5:  { opacity: 0.35, outlineOpacity: 0.95, lineWidth: 3.5 },
+    15: { opacity: 0.20, outlineOpacity: 1.0, lineWidth: 2.5 },
+    10: { opacity: 0.28, outlineOpacity: 1.0, lineWidth: 3 },
+    5:  { opacity: 0.35, outlineOpacity: 1.0, lineWidth: 3.5 },
   },
 }
 
@@ -25,4 +25,4 @@ export const LINE_COLORS = {
 }
 
 export const WALKSHED_ACCENT_LIGHT = '#3A37A0'
-export const WALKSHED_ACCENT_DARK = '#7DF9FF'
+export const WALKSHED_ACCENT_DARK = '#0082C8'

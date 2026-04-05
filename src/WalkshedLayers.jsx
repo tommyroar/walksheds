@@ -7,6 +7,7 @@ export default function WalkshedLayers({ walksheds, enabledWalksheds, darkMode, 
 
   const accent = darkMode ? WALKSHED_ACCENT_DARK : WALKSHED_ACCENT_LIGHT
   const styles = darkMode ? WALKSHED_STYLES.dark : WALKSHED_STYLES.light
+  const mode = darkMode ? 'dark' : 'light'
 
   return WALKSHED_RENDER_ORDER.map((min) => {
     const data = walksheds[min]
@@ -14,22 +15,22 @@ export default function WalkshedLayers({ walksheds, enabledWalksheds, darkMode, 
     const style = styles[min]
     const lineData = polygonToLine(data)
     return (
-      <span key={`walkshed-group-${min}`}>
-        <Source id={`walkshed-${min}`} type="geojson" data={data}>
+      <span key={`walkshed-group-${mode}-${min}`}>
+        <Source id={`walkshed-${mode}-${min}`} type="geojson" data={data}>
           <Layer
-            id={`walkshed-fill-${min}`}
+            id={`walkshed-fill-${mode}-${min}`}
             type="fill"
             paint={{ 'fill-color': accent, 'fill-opacity': style.opacity }}
           />
           <Layer
-            id={`walkshed-outline-${min}`}
+            id={`walkshed-outline-${mode}-${min}`}
             type="line"
             paint={{ 'line-color': accent, 'line-width': style.lineWidth, 'line-opacity': style.outlineOpacity }}
           />
         </Source>
-        <Source id={`walkshed-label-${min}`} type="geojson" data={lineData}>
+        <Source id={`walkshed-label-${mode}-${min}`} type="geojson" data={lineData}>
           <Layer
-            id={`walkshed-label-${min}`}
+            id={`walkshed-label-${mode}-${min}`}
             type="symbol"
             layout={{
               'symbol-placement': 'line',
