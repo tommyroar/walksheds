@@ -91,7 +91,7 @@ export default function App() {
     })
   }, [])
 
-  const selectStation = useCallback((name, lng, lat, line, fly = false) => {
+  const selectStation = useCallback((name, lng, lat, line) => {
     selectedStationRef.current = { name, lng, lat }
     const feat = stationsData?.features.find(f => f.properties.name === name)
     const stopCode = feat?.properties.stopCode ?? null
@@ -106,8 +106,7 @@ export default function App() {
       setJunctionHints([])
     }
 
-    if (fly) mapRef.current?.flyTo({ center: [lng, lat], duration: 600 })
-
+    // Fetch all walkshed isochrones, then fit map to 15-min bounds
     const results = {}
     Promise.all(
       WALKSHED_OPTIONS.map(async (min) => {
@@ -115,7 +114,25 @@ export default function App() {
         if (data) results[min] = data
       })
     ).then(() => {
-      if (selectedStationRef.current?.name === name) setWalksheds(results)
+      if (selectedStationRef.current?.name !== name) return
+      setWalksheds(results)
+
+      // Fit map to 15-min walkshed bounds with buffer
+      const ws15 = results[15]
+      if (ws15?.features?.[0]?.geometry?.coordinates?.[0]) {
+        const coords = ws15.features[0].geometry.coordinates[0]
+        let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity
+        for (const [cLng, cLat] of coords) {
+          if (cLng < minLng) minLng = cLng
+          if (cLng > maxLng) maxLng = cLng
+          if (cLat < minLat) minLat = cLat
+          if (cLat > maxLat) maxLat = cLat
+        }
+        mapRef.current?.fitBounds(
+          [[minLng, minLat], [maxLng, maxLat]],
+          { padding: 60, duration: 600 }
+        )
+      }
     })
   }, [stationsData])
 
@@ -135,20 +152,102 @@ export default function App() {
     setJunctionHints([])
   }, [selectStation])
 
+  // Navigate to adjacent station in a given arrow-key direction
+  const navigateDirection = useCallback((arrowKey) => {
+    if (!graphRef.current || !selectedStationRef.current) return false
+    const result = getNextStation(graphRef.current, selectedStationRef.current.name, arrowKey, currentLine)
+    if (!result) return false
+    const nextNode = graphRef.current.get(result.name)
+    if (!nextNode) return false
+    selectStation(result.name, nextNode.coords[0], nextNode.coords[1], result.line)
+    return true
+  }, [currentLine, selectStation])
+
+  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (!graphRef.current || !selectedStationRef.current) return
       if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return
-      const result = getNextStation(graphRef.current, selectedStationRef.current.name, e.key, currentLine)
-      if (!result) return
-      e.preventDefault()
-      const nextNode = graphRef.current.get(result.name)
-      if (!nextNode) return
-      selectStation(result.name, nextNode.coords[0], nextNode.coords[1], result.line, true)
+      if (navigateDirection(e.key)) e.preventDefault()
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [currentLine, selectStation])
+  }, [navigateDirection])
+
+  // Trackpad scroll / mouse wheel navigation (when a station is selected)
+  useEffect(() => {
+    const SCROLL_THRESHOLD = 80
+    let accumX = 0
+    let accumY = 0
+    let cooldown = false
+
+    const handleWheel = (e) => {
+      if (!selectedStationRef.current) return
+
+      accumX += e.deltaX
+      accumY += e.deltaY
+
+      if (cooldown) return
+
+      let arrowKey = null
+      if (Math.abs(accumY) > Math.abs(accumX)) {
+        if (accumY < -SCROLL_THRESHOLD) arrowKey = 'ArrowUp'
+        else if (accumY > SCROLL_THRESHOLD) arrowKey = 'ArrowDown'
+      } else {
+        if (accumX < -SCROLL_THRESHOLD) arrowKey = 'ArrowLeft'
+        else if (accumX > SCROLL_THRESHOLD) arrowKey = 'ArrowRight'
+      }
+
+      if (arrowKey && navigateDirection(arrowKey)) {
+        e.preventDefault()
+        accumX = 0
+        accumY = 0
+        cooldown = true
+        setTimeout(() => { cooldown = false }, 400)
+      }
+    }
+
+    window.addEventListener('wheel', handleWheel, { passive: false })
+    return () => window.removeEventListener('wheel', handleWheel)
+  }, [navigateDirection])
+
+  // Touch swipe navigation (mobile)
+  useEffect(() => {
+    let startX = 0
+    let startY = 0
+    const SWIPE_THRESHOLD = 50
+
+    const handleTouchStart = (e) => {
+      if (!selectedStationRef.current) return
+      startX = e.touches[0].clientX
+      startY = e.touches[0].clientY
+    }
+
+    const handleTouchEnd = (e) => {
+      if (!selectedStationRef.current) return
+      const dx = e.changedTouches[0].clientX - startX
+      const dy = e.changedTouches[0].clientY - startY
+
+      if (Math.abs(dx) < SWIPE_THRESHOLD && Math.abs(dy) < SWIPE_THRESHOLD) return
+
+      let arrowKey = null
+      if (Math.abs(dy) > Math.abs(dx)) {
+        // Swipe up → go north (ArrowUp), swipe down → go south (ArrowDown)
+        arrowKey = dy < 0 ? 'ArrowUp' : 'ArrowDown'
+      } else {
+        // Swipe left → go west (ArrowLeft), swipe right → go east (ArrowRight)
+        arrowKey = dx < 0 ? 'ArrowLeft' : 'ArrowRight'
+      }
+
+      navigateDirection(arrowKey)
+    }
+
+    window.addEventListener('touchstart', handleTouchStart, { passive: true })
+    window.addEventListener('touchend', handleTouchEnd, { passive: true })
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart)
+      window.removeEventListener('touchend', handleTouchEnd)
+    }
+  }, [navigateDirection])
 
   const handleMouseEnter = useCallback(() => {
     const map = mapRef.current
