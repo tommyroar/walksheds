@@ -1,7 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { themes, themeIds } from './themes'
 
-export default function Menu({ activeThemeId, darkMode, onThemeSwitch, onDarkModeToggle }) {
+const WALKSHED_OPTIONS = [
+  { minutes: 5, label: '5 min' },
+  { minutes: 10, label: '10 min' },
+  { minutes: 15, label: '15 min' },
+]
+
+export default function Menu({ activeThemeId, darkMode, enabledWalksheds, onThemeSwitch, onDarkModeToggle, onWalkshedToggle }) {
   const [open, setOpen] = useState(false)
   const menuRef = useRef(null)
 
@@ -49,6 +55,24 @@ export default function Menu({ activeThemeId, darkMode, onThemeSwitch, onDarkMod
                 </button>
               )
             })}
+          </div>
+        </div>
+
+        <div className="menu-divider" />
+
+        <div className="menu-section">
+          <h4 className="menu-section-title">Walksheds</h4>
+          <div className="menu-walkshed-list">
+            {WALKSHED_OPTIONS.map(({ minutes, label }) => (
+              <label key={minutes} className="menu-walkshed-item">
+                <input
+                  type="checkbox"
+                  checked={enabledWalksheds.has(minutes)}
+                  onChange={() => onWalkshedToggle(minutes)}
+                />
+                <span className="menu-walkshed-label">{label}</span>
+              </label>
+            ))}
           </div>
         </div>
 

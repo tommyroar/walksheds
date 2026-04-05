@@ -192,6 +192,34 @@
   color: var(--ui-text);
 }
 
+/* ── Walkshed checkboxes ── */
+
+.menu-walkshed-list {
+  display: flex;
+  gap: 8px;
+}
+
+.menu-walkshed-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--ui-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.menu-walkshed-item input[type="checkbox"] {
+  accent-color: var(--ui-accent);
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+}
+
+.menu-walkshed-label {
+  white-space: nowrap;
+}
+
 /* ── Line Legend ── */
 
 .line-legend {
@@ -242,6 +270,18 @@
   font-size: 12px;
   color: var(--ui-muted);
   white-space: nowrap;
+}
+
+.legend-divider {
+  height: 1px;
+  background: var(--chrome-border);
+  margin: 10px 0;
+}
+
+.legend-swatch-walkshed {
+  width: 16px;
+  height: 12px;
+  border-radius: 3px;
 }
 
 /* ── Station Popup ── */
