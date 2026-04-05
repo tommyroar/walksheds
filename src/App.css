@@ -224,96 +224,112 @@
   color: #999;
 }
 
-/* ── Expanded station pill ── */
+/* ── Station pill (compact → expanded via CSS transition) ── */
 
-.station-expanded-pill {
+.station-pill {
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   background: #ffffff;
-  border: 2px solid #333;
-  border-radius: 16px;
-  padding: 3px 4px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+  border: 1.5px solid #333;
+  border-radius: 14px;
+  padding: 2px 3px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
   white-space: nowrap;
   pointer-events: auto;
   cursor: default;
-  animation: pill-expand 0.2s ease-out;
+  overflow: hidden;
+  transition: padding 0.25s ease, gap 0.25s ease, box-shadow 0.25s ease, border-width 0.25s ease;
 }
 
-.app.dark .station-expanded-pill {
+.station-pill.expanded {
+  gap: 3px;
+  padding: 3px 4px;
+  border-width: 2px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+
+.app.dark .station-pill {
   background: #2a2a3a;
   border-color: rgba(255, 255, 255, 0.35);
 }
 
-.app.dark .expanded-pill-code {
+.pill-lines {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.pill-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: width 0.25s ease, height 0.25s ease, font-size 0.25s ease;
+}
+
+.station-pill.expanded .pill-circle {
+  width: 22px;
+  height: 22px;
+  font-size: 13px;
+}
+
+.pill-code {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 18px;
+  background: #e8e8e8;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #333;
+  padding: 0 3px;
+  flex-shrink: 0;
+  transition: min-width 0.25s ease, height 0.25s ease, font-size 0.25s ease;
+}
+
+.station-pill.expanded .pill-code {
+  min-width: 26px;
+  height: 22px;
+  font-size: 12px;
+  border-radius: 5px;
+}
+
+.app.dark .pill-code {
   background: rgba(255, 255, 255, 0.12);
   color: #ddd;
 }
 
-.app.dark .expanded-pill-name {
-  color: #ddd;
-}
-
-.app.dark .expanded-pill-hint {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.app.dark .expanded-pill-hint kbd {
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #ddd;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.app.dark .expanded-pill-hints {
-  border-left-color: rgba(255, 255, 255, 0.15);
-}
-
-@keyframes pill-expand {
-  from { transform: scale(0.8); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-.expanded-pill-lines {
-  display: flex;
-  gap: 2px;
-}
-
-.expanded-pill-circle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.expanded-pill-code {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 26px;
-  height: 22px;
-  background: #e8e8e8;
-  border-radius: 5px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #333;
-  padding: 0 4px;
-}
-
-.expanded-pill-name {
+.pill-name {
   font-size: 13px;
   font-weight: 600;
   color: #333;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-width 0.3s ease, opacity 0.2s ease, padding 0.25s ease;
+  padding: 0;
+}
+
+.station-pill.expanded .pill-name {
+  max-width: 300px;
+  opacity: 1;
   padding: 0 6px 0 4px;
 }
 
-.expanded-pill-hints {
+.app.dark .pill-name {
+  color: #ddd;
+}
+
+.pill-hints {
   display: flex;
   gap: 4px;
   margin-left: 2px;
@@ -321,7 +337,11 @@
   border-left: 1px solid #ddd;
 }
 
-.expanded-pill-hint {
+.app.dark .pill-hints {
+  border-left-color: rgba(255, 255, 255, 0.15);
+}
+
+.pill-hint {
   display: flex;
   align-items: center;
   gap: 2px;
@@ -330,7 +350,11 @@
   color: #666;
 }
 
-.expanded-pill-hint kbd {
+.app.dark .pill-hint {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.pill-hint kbd {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -342,6 +366,12 @@
   font-family: inherit;
   color: #333;
   background: #f5f5f5;
+}
+
+.app.dark .pill-hint kbd {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ddd;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 /* ── Mapbox overrides ── */

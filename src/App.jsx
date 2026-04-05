@@ -10,6 +10,47 @@ const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN
 
 const ARROW_SYMBOLS = { ArrowUp: '↑', ArrowDown: '↓', ArrowLeft: '←', ArrowRight: '→' }
 
+function ExpandingPill({ longitude, latitude, lines, stopCode, name, junctionHints }) {
+  const [expanded, setExpanded] = useState(false)
+
+  useEffect(() => {
+    const timer = requestAnimationFrame(() => setExpanded(true))
+    return () => cancelAnimationFrame(timer)
+  }, [])
+
+  const lineArr = lines.split(',')
+
+  return (
+    <Marker longitude={longitude} latitude={latitude} anchor="center">
+      <div className={`station-pill ${expanded ? 'expanded' : ''}`}>
+        <div className="pill-lines">
+          {lineArr.map(num => (
+            <span
+              key={num}
+              className="pill-circle"
+              style={{ background: LINE_COLORS[`${num.trim()}-line`]?.color || '#999' }}
+            >
+              {num.trim()}
+            </span>
+          ))}
+        </div>
+        {stopCode != null && <span className="pill-code">{stopCode}</span>}
+        <span className="pill-name">{name.replace(' Station', '')}</span>
+        {expanded && junctionHints.length > 0 && (
+          <div className="pill-hints">
+            {junctionHints.map((hint) => (
+              <span key={hint.line} className="pill-hint">
+                <kbd>{ARROW_SYMBOLS[hint.arrowKey]}</kbd>
+                {hint.line === '1-line' ? '1' : '2'}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </Marker>
+  )
+}
+
 const SEATTLE_CENTER = [-122.33, 47.60]
 const SEATTLE_ZOOM = 11.5
 
@@ -353,12 +394,13 @@ export default function App() {
           </Source>
         )}
 
-        {/* Stations */}
+        {/* Stations — hide selected so the Marker replaces it seamlessly */}
         {mapLoaded && iconsReady && stationsData && (
           <Source id="stations" type="geojson" data={stationsData}>
             <Layer
               id="station-circles"
               type="symbol"
+              filter={popup ? ['!=', ['get', 'name'], popup.name] : ['has', 'name']}
               layout={{
                 'icon-image': ['concat', 'station-', darkMode ? 'dark' : 'light', '-', ['get', 'lines'], '-', ['to-string', ['get', 'stopCode']]],
                 'icon-size': 0.9,
@@ -369,37 +411,17 @@ export default function App() {
           </Source>
         )}
 
-        {/* Selected station — expanded pill */}
+        {/* Selected station — starts as compact pill, expands to show name */}
         {popup && (
-          <Marker longitude={popup.longitude} latitude={popup.latitude} anchor="center">
-            <div className="station-expanded-pill">
-              <div className="expanded-pill-lines">
-                {(popup.lines || popup.line.replace('-line', '')).split(',').map(num => (
-                  <span
-                    key={num}
-                    className="expanded-pill-circle"
-                    style={{ background: LINE_COLORS[`${num.trim()}-line`]?.color || '#999' }}
-                  >
-                    {num.trim()}
-                  </span>
-                ))}
-              </div>
-              {popup.stopCode != null && (
-                <span className="expanded-pill-code">{popup.stopCode}</span>
-              )}
-              <span className="expanded-pill-name">{popup.name.replace(' Station', '')}</span>
-              {junctionHints.length > 0 && (
-                <div className="expanded-pill-hints">
-                  {junctionHints.map((hint) => (
-                    <span key={hint.line} className="expanded-pill-hint">
-                      <kbd>{ARROW_SYMBOLS[hint.arrowKey]}</kbd>
-                      {hint.line === '1-line' ? '1' : '2'}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </Marker>
+          <ExpandingPill
+            key={popup.name}
+            longitude={popup.longitude}
+            latitude={popup.latitude}
+            lines={popup.lines || popup.line.replace('-line', '')}
+            stopCode={popup.stopCode}
+            name={popup.name}
+            junctionHints={junctionHints}
+          />
         )}
       </Map>
 
