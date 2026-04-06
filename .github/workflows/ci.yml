@@ -33,7 +33,7 @@ jobs:
 
   review:
     name: Claude Code Review
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && vars.ENABLE_CLAUDE_REVIEW == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
