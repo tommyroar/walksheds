@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -31,13 +35,16 @@ jobs:
         env:
           VITE_MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN }}
 
-  review:
-    name: Claude Code Review
-    if: github.event_name == 'pull_request' && vars.ENABLE_CLAUDE_REVIEW == 'true'
+  claude:
+    name: Claude Code
+    if: >
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude'))
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: write
+      issues: write
       id-token: write
     steps:
       - uses: actions/checkout@v4
@@ -47,10 +54,4 @@ jobs:
       - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          prompt: |
-            Review this PR for:
-            1. Code quality and consistency with existing patterns
-            2. Security issues (API keys, injection, etc.)
-            3. Missing tests for new functionality
-
-            Be concise. Only comment on issues, not praise.
+          trigger_phrase: "@claude"
