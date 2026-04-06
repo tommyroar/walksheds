@@ -56,7 +56,7 @@ const MapView = forwardRef(function MapView({
   }, [darkMode, mapLoaded])
 
   const handleDragStart = useCallback(() => { isDraggingRef.current = true }, [])
-  const handleDragEnd = useCallback(() => { isDraggingRef.current = true }, [])
+  const handleDragEnd = useCallback(() => { isDraggingRef.current = false }, [])
 
   const handleMapClick = useCallback((e) => {
     if (isDraggingRef.current) {
