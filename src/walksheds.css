@@ -41,12 +41,189 @@ body,
   max-height: 50vh;
   overflow-y: auto;
   color-scheme: light;
+  transition: left 0.3s ease, right 0.3s ease, bottom 0.3s ease,
+              padding 0.3s ease, border-radius 0.3s ease;
+}
+
+.line-legend.bottom-right {
+  left: auto;
+  right: 16px;
 }
 
 .app.dark .line-legend {
   background: rgba(20, 20, 30, 0.88);
   border-color: rgba(255, 255, 255, 0.08);
   color-scheme: dark;
+}
+
+/* ── Collapsed legend bar ── */
+
+.line-legend.collapsed {
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 12px;
+  padding: 6px 10px;
+  border-radius: 20px;
+  max-height: none;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.line-legend.collapsed.bottom-right {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+}
+
+.legend-collapsed-divider {
+  width: 1px;
+  height: 16px;
+  background: rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+}
+
+.app.dark .legend-collapsed-divider {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.legend-collapsed-walksheds {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-collapsed-dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.15s ease;
+}
+
+.legend-collapsed-dot:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.legend-collapsed-dot.dimmed {
+  opacity: 0.4;
+}
+
+.legend-collapsed-dot .legend-swatch-walkshed {
+  width: 14px;
+  height: 10px;
+}
+
+.app.dark .legend-collapsed-dot:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.legend-dark-toggle-inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.legend-dark-toggle-inline:hover {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.app.dark .legend-dark-toggle-inline {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.app.dark .legend-dark-toggle-inline:hover {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.legend-expand-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.legend-expand-btn:hover {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.app.dark .legend-expand-btn {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.app.dark .legend-expand-btn:hover {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ── Collapse button (in expanded card) ── */
+
+.legend-collapse-btn {
+  position: absolute;
+  top: 10px;
+  right: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.legend-collapse-btn:hover {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.app.dark .legend-collapse-btn {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.app.dark .legend-collapse-btn:hover {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ── Small screens: default collapsed ── */
+
+@media (max-width: 480px) {
+  .line-legend:not(.collapsed) {
+    bottom: 16px;
+    left: 8px;
+    padding: 10px 14px;
+    max-height: 40vh;
+  }
+
+  .line-legend.bottom-right:not(.collapsed) {
+    left: auto;
+    right: 8px;
+  }
 }
 
 /* ── Dark mode toggle ── */

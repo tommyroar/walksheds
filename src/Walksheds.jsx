@@ -8,6 +8,33 @@ import MapView from './MapView'
 import LineLegend from './LineLegend'
 import './walksheds.css'
 
+function computeLegendPosition(map, walksheds, enabledWalksheds) {
+  if (!map) return 'bottom-left'
+  const bounds = getLargestEnabledBounds(walksheds, enabledWalksheds)
+  if (!bounds) return 'bottom-left'
+
+  try {
+    const topLeft = map.project(bounds[0])
+    const bottomRight = map.project(bounds[1])
+    const wsLeft = Math.min(topLeft.x, bottomRight.x)
+    const wsBottom = Math.max(topLeft.y, bottomRight.y)
+    // Legend is ~180px wide, ~280px tall, at bottom-left with 16px margin + 32px bottom
+    const container = map.getContainer()
+    const h = container.clientHeight
+    const legendBottom = h - 32
+    const legendLeft = 16
+    const legendRight = legendLeft + 180
+    const legendTop = legendBottom - 280
+    // Check if walkshed polygon overlaps the bottom-left legend area
+    if (wsLeft < legendRight && wsBottom > legendTop) {
+      return 'bottom-right'
+    }
+  } catch {
+    // map.project can throw if map not ready
+  }
+  return 'bottom-left'
+}
+
 export default function Walksheds() {
   const [popup, setPopup] = useState(null)
   const [walksheds, setWalksheds] = useState({})
@@ -21,6 +48,8 @@ export default function Walksheds() {
   const [line1Data, setLine1Data] = useState(null)
   const [line2Data, setLine2Data] = useState(null)
   const [stationsData, setStationsData] = useState(null)
+  const [legendCollapsed, setLegendCollapsed] = useState(() => window.innerWidth < 480)
+  const [legendPosition, setLegendPosition] = useState('bottom-left')
   const mapViewRef = useRef(null)
   const selectedStationRef = useRef(null)
   const graphRef = useRef(null)
@@ -38,13 +67,16 @@ export default function Walksheds() {
   }, [stationsData])
 
   const handleWalkshedToggle = useCallback((minutes) => {
-    setEnabledWalksheds(prev => {
-      const next = new Set(prev)
-      if (next.has(minutes)) next.delete(minutes)
-      else next.add(minutes)
-      return next
-    })
-  }, [])
+    const next = new Set(enabledWalksheds)
+    if (next.has(minutes)) next.delete(minutes)
+    else next.add(minutes)
+    setEnabledWalksheds(next)
+
+    if (Object.keys(walksheds).length) {
+      const map = mapViewRef.current?.getMap()
+      setLegendPosition(computeLegendPosition(map, walksheds, next))
+    }
+  }, [enabledWalksheds, walksheds])
 
   const selectStation = useCallback((name, lng, lat, line) => {
     selectedStationRef.current = { name, lng, lat }
@@ -54,6 +86,7 @@ export default function Walksheds() {
     setPopup({ longitude: lng, latitude: lat, name, line, stopCode, lines })
     setCurrentLine(line)
     setWalksheds({})
+    setLegendCollapsed(true)
 
     // Sync URL
     if (stopCode != null) {
@@ -83,6 +116,9 @@ export default function Walksheds() {
       if (bounds) {
         mapViewRef.current?.fitBounds(bounds, { padding: 60, duration: 600 })
       }
+
+      const map = mapViewRef.current?.getMap()
+      setLegendPosition(computeLegendPosition(map, results, enabledWalksheds))
     })
   }, [stationsData, enabledWalksheds])
 
@@ -101,6 +137,8 @@ export default function Walksheds() {
     setWalksheds({})
     setCurrentLine(null)
     setJunctionHints([])
+    setLegendCollapsed(false)
+    setLegendPosition('bottom-left')
     window.history.replaceState(null, '', import.meta.env.BASE_URL)
   }, [])
 
@@ -154,6 +192,9 @@ export default function Walksheds() {
         onWalkshedToggle={handleWalkshedToggle}
         darkMode={darkMode}
         onDarkModeToggle={() => setDarkMode(d => !d)}
+        collapsed={legendCollapsed}
+        onToggleCollapse={() => setLegendCollapsed(c => !c)}
+        position={legendPosition}
       />
     </div>
   )
