@@ -54,3 +54,27 @@ React SPA deployed to GitHub Pages via `.github/workflows/deploy.yml` on push to
 ## Mapbox Style
 
 Base: `mapbox://styles/mapbox/standard` with `theme: 'default'`, `lightPreset: 'day'`. Dark mode toggles to `lightPreset: 'dusk'`.
+
+## Station Codes (Sound Transit Reference)
+
+Reference: https://www.soundtransit.org/ride-with-us/stations/link-light-rail-stations
+Blog post: https://www.soundtransit.org/blog/platform/understanding-sound-transits-new-three-digit-station-codes
+Screenshots: `data/reference/soundtransit-stations.png`, `data/reference/soundtransit-station-codes.png`
+
+Sound Transit uses three-digit station codes: first digit = line number, last two digits = stop code.
+Westlake (center) = 50. Numbers increase south/east, decrease north. Gaps reserved for future infill stations.
+
+**Shared stations (both lines):**
+40=Lynnwood City Center, 41=Mountlake Terrace, 42=Shoreline North/185th, 43=Shoreline South/148th,
+[44=NE 130th St, future], 45=Northgate, 46=Roosevelt, 47=U District, 48=UW,
+49=Capitol Hill, 50=Westlake, 51=Symphony, 52=Pioneer Square, 53=Intl District/Chinatown
+
+**Line 1 only (south):**
+54=Stadium, 55=SODO, 56=Beacon Hill, 57=Mount Baker, 58=Columbia City,
+[59=Graham St, future], 60=Othello, 61=Rainier Beach, [62=Boeing Access Rd, future],
+63=Tukwila Intl Blvd, 64=SeaTac/Airport, 65=Angle Lake, 66=Kent Des Moines, 67=Star Lake, 68=Federal Way Downtown
+
+**Line 2 only (east):**
+54=Judkins Park, 55=Mercer Island, 56=South Bellevue, 57=East Main, 58=Bellevue Downtown,
+59=Wilburton, 60=Spring District, 61=BelRed, 62=Overlake Village, 63=Redmond Technology,
+64=Marymoor Village, 65=Downtown Redmond

@@ -111,20 +111,22 @@ TACOMA_KW = [
 # Shared stations use the same code for both lines
 # Line-specific stations use line-prefixed codes (1xx for Line 1, 2xx for Line 2)
 STOP_CODES = {
-    # Shared
+    # Shared — Westlake=50 center, decreasing north, increasing south
+    # Reference: soundtransit.org/blog/platform/understanding-sound-transits-new-three-digit-station-codes
     "Lynnwood City Center Station": 40,
     "Mountlake Terrace Station": 41,
-    "Shoreline South/148th Station": 42,
     "Shoreline North/185th Station": 42,
-    "Northgate Station": 43,
-    "Roosevelt Station": 45,
-    "U District Station": 46,
-    "University of Washington Station": 47,
-    "Capitol Hill Station": 48,
-    "Westlake Station": 49,
-    "Symphony Station": 50,
-    "Pioneer Square Station": 51,
-    "International District Station": 52,
+    "Shoreline South/148th Station": 43,
+    # 44 reserved for future NE 130th St Station
+    "Northgate Station": 45,
+    "Roosevelt Station": 46,
+    "U District Station": 47,
+    "University of Washington Station": 48,
+    "Capitol Hill Station": 49,
+    "Westlake Station": 50,
+    "Symphony Station": 51,
+    "Pioneer Square Station": 52,
+    "International District Station": 53,
 }
 
 LINE_1_CODES = {

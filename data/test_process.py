@@ -95,3 +95,30 @@ class TestStationData:
         assert shared == 13, f"Expected 13 shared stations, got {shared}"
         assert line1_only == 13, f"Expected 13 Line 1 only stations, got {line1_only}"
         assert line2_only == 12, f"Expected 12 Line 2 only stations, got {line2_only}"
+
+    @pytest.mark.unit
+    def test_stop_codes_unique_per_line(self):
+        """Each (line, stopCode) pair must be unique."""
+        stations = load("all-stations")
+        seen = {}
+        for feat in stations["features"]:
+            props = feat["properties"]
+            for line_num in props["lines"].split(","):
+                key = (line_num.strip(), props["stopCode"])
+                assert key not in seen, (
+                    f"Duplicate stop code {props['stopCode']} on line {line_num}: "
+                    f"{seen[key]} and {props['name']}"
+                )
+                seen[key] = props["name"]
+
+    @pytest.mark.unit
+    def test_known_stop_codes(self):
+        """Verify specific codes match Sound Transit reference."""
+        stations = load("all-stations")
+        by_name = {f["properties"]["name"]: f["properties"]["stopCode"] for f in stations["features"]}
+        assert by_name["Westlake Station"] == 50
+        assert by_name["U District Station"] == 47
+        assert by_name["International District Station"] == 53
+        assert by_name["Lynnwood City Center Station"] == 40
+        assert by_name["Federal Way Downtown Station"] == 68
+        assert by_name["Downtown Redmond Station"] == 65

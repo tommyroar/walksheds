@@ -9,6 +9,16 @@
     <title>Walksheds — Seattle Light Rail Explorer</title>
   </head>
   <body>
+    <script>
+      // Restore SPA path from 404.html redirect (GitHub Pages)
+      (function () {
+        var p = new URLSearchParams(window.location.search).get('p');
+        if (p) {
+          var rest = window.location.search.replace(/[?&]p=[^&]+/, '').replace(/^&/, '?');
+          window.history.replaceState(null, '', p + rest);
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
