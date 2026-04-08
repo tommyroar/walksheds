@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { buildGraph, isJunction, getJunctionHints } from './routeGraph'
 import { fetchWalkshed, getLargestEnabledBounds } from './mapbox'
 import { WALKSHED_OPTIONS, LINE_COLORS, WALKSHED_ACCENT_LIGHT, WALKSHED_ACCENT_DARK } from './constants'
+import { parseStationPath, buildStationPath, findStationByCode, parseWalkshedParams, buildWalkshedParams } from './deepLink'
 import { useNavigation } from './useNavigation'
 import MapView from './MapView'
 import LineLegend from './LineLegend'
@@ -10,7 +11,10 @@ import './walksheds.css'
 export default function Walksheds() {
   const [popup, setPopup] = useState(null)
   const [walksheds, setWalksheds] = useState({})
-  const [enabledWalksheds, setEnabledWalksheds] = useState(new Set([5, 10, 15]))
+  const [enabledWalksheds, setEnabledWalksheds] = useState(() => {
+    const fromUrl = parseWalkshedParams(window.location.search)
+    return fromUrl || new Set([5, 10, 15])
+  })
   const [currentLine, setCurrentLine] = useState(null)
   const [junctionHints, setJunctionHints] = useState([])
   const [darkMode, setDarkMode] = useState(false)
@@ -20,6 +24,7 @@ export default function Walksheds() {
   const mapViewRef = useRef(null)
   const selectedStationRef = useRef(null)
   const graphRef = useRef(null)
+  const resolvedRef = useRef(false)
 
   useEffect(() => {
     const base = import.meta.env.BASE_URL
@@ -49,6 +54,14 @@ export default function Walksheds() {
     setPopup({ longitude: lng, latitude: lat, name, line, stopCode, lines })
     setCurrentLine(line)
     setWalksheds({})
+
+    // Sync URL
+    if (stopCode != null) {
+      const base = import.meta.env.BASE_URL
+      const lineNum = line.replace('-line', '')
+      const path = buildStationPath(lineNum, stopCode, base) + buildWalkshedParams(enabledWalksheds)
+      window.history.replaceState(null, '', path)
+    }
 
     if (graphRef.current && isJunction(graphRef.current, name)) {
       setJunctionHints(getJunctionHints(graphRef.current, name))
@@ -88,7 +101,33 @@ export default function Walksheds() {
     setWalksheds({})
     setCurrentLine(null)
     setJunctionHints([])
+    window.history.replaceState(null, '', import.meta.env.BASE_URL)
   }, [])
+
+  // Resolve deep link on initial load
+  useEffect(() => {
+    if (!stationsData || resolvedRef.current) return
+    resolvedRef.current = true
+    const base = import.meta.env.BASE_URL
+    const parsed = parseStationPath(window.location.pathname, base)
+    if (!parsed) return
+    const station = findStationByCode(stationsData, parsed.line, parsed.stopCode)
+    if (!station) return
+    // Defer to avoid synchronous setState in effect body (lint: react-hooks/set-state-in-effect)
+    queueMicrotask(() => selectStation(station.name, station.lng, station.lat, station.line))
+  }, [stationsData, selectStation])
+
+  // Sync walkshed query params when toggles change
+  useEffect(() => {
+    if (!selectedStationRef.current) return
+    const feat = stationsData?.features.find(f => f.properties.name === selectedStationRef.current.name)
+    if (!feat) return
+    const base = import.meta.env.BASE_URL
+    const lineNum = currentLine?.replace('-line', '')
+    if (!lineNum) return
+    const path = buildStationPath(lineNum, feat.properties.stopCode, base) + buildWalkshedParams(enabledWalksheds)
+    window.history.replaceState(null, '', path)
+  }, [enabledWalksheds, stationsData, currentLine])
 
   useNavigation({ graphRef, selectedStationRef, currentLine, selectStation })
 
