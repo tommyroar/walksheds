@@ -46,11 +46,7 @@ export default function LineLegend({
   if (collapsed) {
     return (
       <div className={`line-legend collapsed ${posClass}`} {...swipeProps}>
-        <div className="legend-drag-bar" onClick={onToggleCollapse}>
-          <div className="legend-drag-bar-line" />
-        </div>
-        <div className="legend-collapsed-body">
-          <button className="legend-dark-toggle-inline" onClick={onDarkModeToggle} aria-label="Toggle dark mode">
+        <button className="legend-dark-toggle-inline" onClick={onDarkModeToggle} aria-label="Toggle dark mode">
             {darkMode ? (
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
                 <circle cx="8" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.5"/>
@@ -85,7 +81,12 @@ export default function LineLegend({
               )
             })}
           </div>
-        </div>
+        <div className="legend-collapsed-divider" />
+        <button className="legend-expand-btn" onClick={onToggleCollapse} aria-label="Expand legend">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+            <path d="M4 10l4-4 4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </button>
       </div>
     )
   }
