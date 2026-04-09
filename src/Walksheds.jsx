@@ -48,7 +48,7 @@ export default function Walksheds() {
   const [line1Data, setLine1Data] = useState(null)
   const [line2Data, setLine2Data] = useState(null)
   const [stationsData, setStationsData] = useState(null)
-  const [legendCollapsed, setLegendCollapsed] = useState(() => window.innerWidth < 480)
+  const [legendCollapsed, setLegendCollapsed] = useState(() => window.innerWidth < 480 || window.innerHeight < 500)
   const [legendPosition, setLegendPosition] = useState('bottom-left')
   const mapViewRef = useRef(null)
   const selectedStationRef = useRef(null)

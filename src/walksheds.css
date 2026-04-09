@@ -37,12 +37,13 @@ body,
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 10px;
-  padding: 14px 18px;
+  padding: 0 18px 14px;
   max-height: 50vh;
   overflow-y: auto;
   color-scheme: light;
   transition: left 0.3s ease, right 0.3s ease, bottom 0.3s ease,
               padding 0.3s ease, border-radius 0.3s ease;
+  touch-action: pan-x;
 }
 
 .line-legend.bottom-right {
@@ -54,6 +55,36 @@ body,
   background: rgba(20, 20, 30, 0.88);
   border-color: rgba(255, 255, 255, 0.08);
   color-scheme: dark;
+}
+
+/* ── Drag bar (expand/collapse handle) ── */
+
+.legend-drag-bar {
+  display: flex;
+  justify-content: center;
+  padding: 6px 0 2px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.legend-drag-bar-line {
+  width: 28px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.18);
+  transition: background 0.15s ease;
+}
+
+.legend-drag-bar:hover .legend-drag-bar-line {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.app.dark .legend-drag-bar-line {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.app.dark .legend-drag-bar:hover .legend-drag-bar-line {
+  background: rgba(255, 255, 255, 0.4);
 }
 
 /* ── Collapsed legend bar ── */
@@ -97,15 +128,15 @@ body,
 .legend-collapsed-dot {
   display: flex;
   align-items: center;
-  justify-content: center;
-  width: 24px;
+  gap: 3px;
   height: 24px;
   border: none;
   border-radius: 6px;
   background: transparent;
   cursor: pointer;
-  padding: 0;
+  padding: 2px 5px;
   transition: opacity 0.15s ease;
+  font-family: inherit;
 }
 
 .legend-collapsed-dot:hover {
@@ -117,8 +148,27 @@ body,
 }
 
 .legend-collapsed-dot .legend-swatch-walkshed {
-  width: 14px;
+  width: 12px;
   height: 10px;
+}
+
+.legend-collapsed-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #555;
+  line-height: 1;
+}
+
+.legend-collapsed-dot.dimmed .legend-collapsed-label {
+  color: #999;
+}
+
+.app.dark .legend-collapsed-label {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.app.dark .legend-collapsed-dot.dimmed .legend-collapsed-label {
+  color: rgba(255, 255, 255, 0.25);
 }
 
 .app.dark .legend-collapsed-dot:hover {
@@ -179,44 +229,13 @@ body,
   color: rgba(255, 255, 255, 0.6);
 }
 
-/* ── Collapse button (in expanded card) ── */
-
-.legend-collapse-btn {
-  position: absolute;
-  top: 10px;
-  right: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-  transition: color 0.15s ease;
-}
-
-.legend-collapse-btn:hover {
-  color: rgba(0, 0, 0, 0.5);
-}
-
-.app.dark .legend-collapse-btn {
-  color: rgba(255, 255, 255, 0.2);
-}
-
-.app.dark .legend-collapse-btn:hover {
-  color: rgba(255, 255, 255, 0.5);
-}
-
 /* ── Small screens: default collapsed ── */
 
 @media (max-width: 480px) {
   .line-legend:not(.collapsed) {
     bottom: 16px;
     left: 8px;
-    padding: 10px 14px;
+    padding: 0 14px 10px;
     max-height: 40vh;
   }
 
@@ -230,7 +249,7 @@ body,
 
 .legend-dark-toggle {
   position: absolute;
-  top: 10px;
+  top: 22px;
   right: 10px;
   display: flex;
   align-items: center;
