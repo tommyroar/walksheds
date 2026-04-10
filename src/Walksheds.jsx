@@ -1,11 +1,13 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { buildGraph, isJunction, getJunctionHints } from './routeGraph'
 import { fetchWalkshed, getLargestEnabledBounds } from './mapbox'
-import { WALKSHED_OPTIONS, LINE_COLORS, WALKSHED_ACCENT_LIGHT, WALKSHED_ACCENT_DARK } from './constants'
+import { WALKSHED_OPTIONS, LINE_COLORS, WALKSHED_ACCENT_LIGHT, WALKSHED_ACCENT_DARK, SEATTLE_CENTER, SEATTLE_ZOOM } from './constants'
 import { parseStationPath, buildStationPath, findStationByCode, parseWalkshedParams, buildWalkshedParams } from './deepLink'
 import { useNavigation } from './useNavigation'
 import MapView from './MapView'
 import LineLegend from './LineLegend'
+import Intro from './Intro'
+import { shouldShowIntro } from './introState'
 import './walksheds.css'
 
 function computeLegendPosition(map, walksheds, enabledWalksheds) {
@@ -50,6 +52,7 @@ export default function Walksheds() {
   const [stationsData, setStationsData] = useState(null)
   const [legendCollapsed, setLegendCollapsed] = useState(() => window.innerWidth < 480 || window.innerHeight < 500)
   const [legendPosition, setLegendPosition] = useState('bottom-left')
+  const [introVisible, setIntroVisible] = useState(() => shouldShowIntro())
   const mapViewRef = useRef(null)
   const selectedStationRef = useRef(null)
   const graphRef = useRef(null)
@@ -169,6 +172,24 @@ export default function Walksheds() {
 
   useNavigation({ graphRef, selectedStationRef, currentLine, selectStation })
 
+  const introControls = {
+    selectByName: useCallback((name) => {
+      const feat = stationsData?.features.find(f => f.properties.name === name)
+      if (!feat) return
+      const [lng, lat] = feat.geometry.coordinates
+      selectStation(name, lng, lat, feat.properties.line)
+    }, [stationsData, selectStation]),
+    setEnabledWalksheds: useCallback((set) => setEnabledWalksheds(set), []),
+    flyToOverview: useCallback(() => {
+      handleDeselect()
+      mapViewRef.current?.getMap()?.flyTo({
+        center: SEATTLE_CENTER,
+        zoom: SEATTLE_ZOOM,
+        duration: 1500,
+      })
+    }, [handleDeselect]),
+  }
+
   return (
     <div className={`app ${darkMode ? 'dark' : ''}`}>
       <MapView
@@ -196,6 +217,13 @@ export default function Walksheds() {
         onToggleCollapse={() => setLegendCollapsed(c => !c)}
         position={legendPosition}
       />
+
+      {introVisible && stationsData && (
+        <Intro
+          controls={introControls}
+          onClose={() => setIntroVisible(false)}
+        />
+      )}
     </div>
   )
 }
