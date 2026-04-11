@@ -5,9 +5,10 @@ import { markIntroSeen } from './introState'
  * Intro walkthrough animation. Drives the parent app via the `controls` prop
  * to demonstrate station selection, walkshed layers, and station navigation.
  *
- * Steps auto-advance after `duration` ms. The user can skip at any time.
+ * Steps auto-advance after `duration` ms once any `waitFor` predicate is true.
+ * The user can skip at any time.
  */
-export default function Intro({ controls, onClose }) {
+export default function Intro({ controls, walkshedsReady, onClose }) {
   const [stepIdx, setStepIdx] = useState(0)
   const ranOnEnterRef = useRef(-1)
 
@@ -19,54 +20,48 @@ export default function Intro({ controls, onClose }) {
   const steps = [
     {
       title: 'Welcome to Walksheds',
-      body: 'See how far you can walk from each Link Light Rail station. Take a 30-second tour?',
-      duration: null, // wait for explicit Start
+      body: 'See how far you can walk from each Link Light Rail station. Take a quick tour?',
       primary: { label: 'Start tour', action: () => setStepIdx(1) },
       secondary: { label: 'Skip', action: close },
     },
     {
       title: 'Westlake Station',
-      body: 'This is Westlake — the center of the Link network. The colored areas around a station show how far you can walk in 5, 10, or 15 minutes.',
-      duration: 4500,
+      body: 'The center of the Link network. The colored area shows everywhere you can walk in 5 minutes.',
+      duration: 3000,
+      waitForWalksheds: true,
       onEnter: () => {
-        controls.setEnabledWalksheds(new Set())
+        // Pre-select walkshed=5 so the layer renders the moment the fetch resolves
+        controls.setEnabledWalksheds(new Set([5]))
         controls.selectByName('Westlake Station')
       },
     },
     {
-      title: '5 minutes on foot',
-      body: 'Your immediate block — about a quarter mile.',
-      duration: 2800,
-      onEnter: () => controls.setEnabledWalksheds(new Set([5])),
-    },
-    {
       title: '10 minutes on foot',
       body: 'Comfortable for an errand or coffee run.',
-      duration: 2800,
+      duration: 2500,
       onEnter: () => controls.setEnabledWalksheds(new Set([5, 10])),
     },
     {
       title: '15 minutes on foot',
       body: 'Your full neighborhood reach — roughly three-quarters of a mile.',
-      duration: 3000,
+      duration: 2500,
       onEnter: () => controls.setEnabledWalksheds(new Set([5, 10, 15])),
     },
     {
       title: 'Move along the line',
       body: 'Swipe, scroll horizontally, or use the arrow keys to step between stations.',
-      duration: 3200,
+      duration: 2500,
       onEnter: () => controls.selectByName('Symphony Station'),
     },
     {
       title: 'Back to Westlake',
       body: '',
-      duration: 2200,
+      duration: 1800,
       onEnter: () => controls.selectByName('Westlake Station'),
     },
     {
       title: 'Your turn',
       body: 'Tap any station on the map to explore its walkshed.',
-      duration: null,
       onEnter: () => controls.flyToOverview(),
       primary: { label: 'Got it', action: close },
     },
@@ -81,14 +76,20 @@ export default function Intro({ controls, onClose }) {
     step.onEnter?.()
   }, [stepIdx, step])
 
-  // Auto-advance after duration
+  // Auto-advance after duration. If the step is waiting on walkshed data,
+  // delay arming the normal timer until walkshedsReady becomes true; meanwhile
+  // a longer fallback timer guarantees the intro can't get permastuck if a
+  // fetch fails.
   useEffect(() => {
     if (step.duration == null) return
-    const t = setTimeout(() => {
-      setStepIdx((i) => (i + 1 < steps.length ? i + 1 : i))
-    }, step.duration)
+    const advance = () => setStepIdx((i) => (i + 1 < steps.length ? i + 1 : i))
+    if (step.waitForWalksheds && !walkshedsReady) {
+      const fallback = setTimeout(advance, 8000)
+      return () => clearTimeout(fallback)
+    }
+    const t = setTimeout(advance, step.duration)
     return () => clearTimeout(t)
-  }, [stepIdx, step.duration, steps.length])
+  }, [stepIdx, step.duration, step.waitForWalksheds, walkshedsReady, steps.length])
 
   return (
     <div className="intro-overlay" role="dialog" aria-live="polite">

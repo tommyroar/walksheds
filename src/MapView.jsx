@@ -36,6 +36,9 @@ const MapView = forwardRef(function MapView({
   const handleMapLoad = useCallback(() => {
     mapLoadedRef.current = true
     setMapLoaded(true)
+    if (import.meta.env.DEV) {
+      window.__mapForTest = mapRef.current?.getMap()
+    }
   }, [])
 
   useEffect(() => {
