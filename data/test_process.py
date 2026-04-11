@@ -122,3 +122,25 @@ class TestStationData:
         assert by_name["Lynnwood City Center Station"] == 40
         assert by_name["Federal Way Downtown Station"] == 68
         assert by_name["Downtown Redmond Station"] == 65
+
+
+class TestBakeIndexConsistency:
+    """If a baked walkshed file exists, every station-index entry must be present."""
+
+    @pytest.mark.unit
+    def test_walkshed_keys_cover_station_index(self):
+        bake_path = os.path.join(PUBLIC, "walksheds.geojson")
+        index_path = os.path.join(ROOT, "data", "station-index.json")
+        if not os.path.exists(bake_path) or not os.path.exists(index_path):
+            pytest.skip("walksheds.geojson not present — skipping cross-check")
+
+        with open(bake_path) as f:
+            bake = json.load(f)
+        with open(index_path) as f:
+            index = json.load(f)
+
+        keys = set(bake["walksheds"].keys())
+        for station in index["stations"]:
+            for minutes in (5, 10, 15):
+                key = f"{station['lines']}-{station['stopCode']}-{minutes}"
+                assert key in keys, f"Missing baked walkshed for {key} ({station['name']})"

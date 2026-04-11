@@ -151,7 +151,11 @@ class TestDownload:
         written = json.loads((raw / "light-rail-stations.geojson").read_text())
         assert len(written["features"]) == 40
 
-        mock_proc.assert_called_once()
+        # download() runs process.py then build_station_index.py.
+        assert mock_proc.call_count == 2
+        scripts = [call.args[0][1] for call in mock_proc.call_args_list]
+        assert any("process.py" in s for s in scripts)
+        assert any("build_station_index.py" in s for s in scripts)
 
     def test_urls_are_well_formed(self):
         assert "FeatureServer/14" in STATIONS_URL

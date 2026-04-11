@@ -87,7 +87,10 @@ def download(dry_run: bool = False) -> tuple[dict, dict]:
     print("\nProcessing...")
     subprocess.check_call([sys.executable, str(ROOT / "data" / "process.py")])
 
-    print("\nDone. Review changes with: git diff public/")
+    print("\nBuilding station index...")
+    subprocess.check_call([sys.executable, str(ROOT / "data" / "build_station_index.py")])
+
+    print("\nDone. Review changes with: git diff public/ data/station-index.json")
     return stations, alignment
 
 

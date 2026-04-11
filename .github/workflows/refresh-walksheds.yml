@@ -1,0 +1,99 @@
+name: Refresh walksheds
+
+on:
+  schedule:
+    # 1st of the month, 08:00 UTC (~01:00 PT)
+    - cron: "0 8 1 * *"
+  workflow_dispatch:
+
+concurrency:
+  group: walkshed-refresh
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    name: Refresh + bake walksheds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: astral-sh/setup-uv@v3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Python deps
+        run: pip install pytest httpx
+
+      - name: Refresh SDOT raw data and rebuild station index
+        run: uv run data/refresh.py
+
+      - name: Compare station index against live SDOT
+        id: compare
+        continue-on-error: true
+        run: python data/compare_station_index.py
+
+      - name: Bake Mapbox isochrones
+        env:
+          MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN }}
+        run: python data/bake_walksheds.py
+
+      - name: Run data tests
+        run: cd data && pytest -v
+
+      - name: Frontend smoke build
+        env:
+          VITE_MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN }}
+        run: |
+          npm ci
+          npm run build
+
+      - name: Open pull request
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: data/refresh-walksheds-${{ github.run_id }}
+          base: main
+          title: "data: refresh walksheds"
+          commit-message: "data: refresh walksheds"
+          body: |
+            Automated walkshed refresh.
+
+            - SDOT raw data: re-downloaded
+            - Station index drift status: **${{ steps.compare.outcome }}**
+            - Mapbox isochrones: re-baked
+
+            If drift status is `failure`, see the workflow run summary for the
+            drift report and update `data/process.py` (`NAME_MAP` /
+            `MISSING_STATIONS` / line orders) before merging.
+
+            Workflow: [`refresh-walksheds.yml`](.github/workflows/refresh-walksheds.yml)
+          labels: |
+            data-refresh
+          add-paths: |
+            data/raw/light-rail-stations.geojson
+            data/raw/light-rail-alignment.geojson
+            data/station-index.json
+            public/all-stations.geojson
+            public/line1-alignment.geojson
+            public/line2-alignment.geojson
+            public/walksheds.geojson
+
+      - name: Add drift-detected label
+        if: steps.compare.outcome == 'failure' && steps.cpr.outputs.pull-request-number
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr edit "${{ steps.cpr.outputs.pull-request-number }}" \
+            --repo "${{ github.repository }}" \
+            --add-label drift-detected
