@@ -8,14 +8,14 @@ export const WALKSHED_RENDER_ORDER = [15, 10, 5]
 
 export const WALKSHED_STYLES = {
   light: {
-    15: { opacity: 0.12, outlineOpacity: 0.6, lineWidth: 2 },
-    10: { opacity: 0.18, outlineOpacity: 0.7, lineWidth: 2.5 },
-    5:  { opacity: 0.25, outlineOpacity: 0.85, lineWidth: 3 },
+    15: { opacity: 0.10, outlineOpacity: 1.0, lineWidth: 2 },
+    10: { opacity: 0.15, outlineOpacity: 1.0, lineWidth: 2.5 },
+    5:  { opacity: 0.22, outlineOpacity: 1.0, lineWidth: 3 },
   },
   dark: {
-    15: { opacity: 0.20, outlineOpacity: 1.0, lineWidth: 2.5 },
-    10: { opacity: 0.28, outlineOpacity: 1.0, lineWidth: 3 },
-    5:  { opacity: 0.35, outlineOpacity: 1.0, lineWidth: 3.5 },
+    15: { opacity: 0.10, outlineOpacity: 1.0, lineWidth: 2 },
+    10: { opacity: 0.15, outlineOpacity: 1.0, lineWidth: 2.5 },
+    5:  { opacity: 0.22, outlineOpacity: 1.0, lineWidth: 3 },
   },
 }
 
@@ -24,5 +24,5 @@ export const LINE_COLORS = {
   '2-line': { color: '#0082C8', label: '2 Line' },
 }
 
-export const WALKSHED_ACCENT_LIGHT = '#3A37A0'
-export const WALKSHED_ACCENT_DARK = '#0082C8'
+export const WALKSHED_ACCENT_LIGHT = '#0082C8'
+export const WALKSHED_ACCENT_DARK = '#4CAF50'

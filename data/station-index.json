@@ -1,0 +1,271 @@
+{
+  "stations": [
+    {
+      "lat": 47.5911083518244,
+      "lines": "1",
+      "lng": -122.327171618272,
+      "name": "Stadium Station",
+      "stopCode": 54
+    },
+    {
+      "lat": 47.581074282053,
+      "lines": "1",
+      "lng": -122.327389774014,
+      "name": "SODO Station",
+      "stopCode": 55
+    },
+    {
+      "lat": 47.5793276863571,
+      "lines": "1",
+      "lng": -122.311533471218,
+      "name": "Beacon Hill Station",
+      "stopCode": 56
+    },
+    {
+      "lat": 47.5765501262846,
+      "lines": "1",
+      "lng": -122.297679104375,
+      "name": "Mount Baker Station",
+      "stopCode": 57
+    },
+    {
+      "lat": 47.5597334784311,
+      "lines": "1",
+      "lng": -122.292691648732,
+      "name": "Columbia City Station",
+      "stopCode": 58
+    },
+    {
+      "lat": 47.5379868480215,
+      "lines": "1",
+      "lng": -122.281562901357,
+      "name": "Othello Station",
+      "stopCode": 60
+    },
+    {
+      "lat": 47.5223936042706,
+      "lines": "1",
+      "lng": -122.279390550758,
+      "name": "Rainier Beach Station",
+      "stopCode": 61
+    },
+    {
+      "lat": 47.4640306108864,
+      "lines": "1",
+      "lng": -122.287995911829,
+      "name": "Tukwila International Blvd Station",
+      "stopCode": 63
+    },
+    {
+      "lat": 47.4453811664942,
+      "lines": "1",
+      "lng": -122.296898315866,
+      "name": "Airport / SeaTac Station",
+      "stopCode": 64
+    },
+    {
+      "lat": 47.4227026714562,
+      "lines": "1",
+      "lng": -122.29771402321,
+      "name": "Angle Lake Station",
+      "stopCode": 65
+    },
+    {
+      "lat": 47.411,
+      "lines": "1",
+      "lng": -122.2953,
+      "name": "Kent Des Moines Station",
+      "stopCode": 66
+    },
+    {
+      "lat": 47.394,
+      "lines": "1",
+      "lng": -122.293,
+      "name": "Star Lake Station",
+      "stopCode": 67
+    },
+    {
+      "lat": 47.317,
+      "lines": "1",
+      "lng": -122.312,
+      "name": "Federal Way Downtown Station",
+      "stopCode": 68
+    },
+    {
+      "lat": 47.8156,
+      "lines": "1,2",
+      "lng": -122.2948,
+      "name": "Lynnwood City Center Station",
+      "stopCode": 40
+    },
+    {
+      "lat": 47.785,
+      "lines": "1,2",
+      "lng": -122.3148,
+      "name": "Mountlake Terrace Station",
+      "stopCode": 41
+    },
+    {
+      "lat": 47.7641,
+      "lines": "1,2",
+      "lng": -122.3229,
+      "name": "Shoreline North/185th Station",
+      "stopCode": 42
+    },
+    {
+      "lat": 47.7361012121992,
+      "lines": "1,2",
+      "lng": -122.325233528668,
+      "name": "Shoreline South/148th Station",
+      "stopCode": 43
+    },
+    {
+      "lat": 47.7030278568312,
+      "lines": "1,2",
+      "lng": -122.328290001707,
+      "name": "Northgate Station",
+      "stopCode": 45
+    },
+    {
+      "lat": 47.6765945836052,
+      "lines": "1,2",
+      "lng": -122.315976128072,
+      "name": "Roosevelt Station",
+      "stopCode": 46
+    },
+    {
+      "lat": 47.6603010387388,
+      "lines": "1,2",
+      "lng": -122.314131795454,
+      "name": "U District Station",
+      "stopCode": 47
+    },
+    {
+      "lat": 47.6498150806149,
+      "lines": "1,2",
+      "lng": -122.303763015652,
+      "name": "University of Washington Station",
+      "stopCode": 48
+    },
+    {
+      "lat": 47.6190601473748,
+      "lines": "1,2",
+      "lng": -122.320194654226,
+      "name": "Capitol Hill Station",
+      "stopCode": 49
+    },
+    {
+      "lat": 47.6115721588528,
+      "lines": "1,2",
+      "lng": -122.336719986395,
+      "name": "Westlake Station",
+      "stopCode": 50
+    },
+    {
+      "lat": 47.6078102407675,
+      "lines": "1,2",
+      "lng": -122.336019831775,
+      "name": "Symphony Station",
+      "stopCode": 51
+    },
+    {
+      "lat": 47.6025601245898,
+      "lines": "1,2",
+      "lng": -122.33121602176,
+      "name": "Pioneer Square Station",
+      "stopCode": 52
+    },
+    {
+      "lat": 47.5983550239356,
+      "lines": "1,2",
+      "lng": -122.327992256932,
+      "name": "International District Station",
+      "stopCode": 53
+    },
+    {
+      "lat": 47.5902991386253,
+      "lines": "2",
+      "lng": -122.304508544173,
+      "name": "Judkins Park Station",
+      "stopCode": 54
+    },
+    {
+      "lat": 47.5881982178678,
+      "lines": "2",
+      "lng": -122.233231674682,
+      "name": "Mercer Island Station",
+      "stopCode": 55
+    },
+    {
+      "lat": 47.5865560021647,
+      "lines": "2",
+      "lng": -122.190395806176,
+      "name": "South Bellevue Station",
+      "stopCode": 56
+    },
+    {
+      "lat": 47.6081876814778,
+      "lines": "2",
+      "lng": -122.19114714966,
+      "name": "East Main Station",
+      "stopCode": 57
+    },
+    {
+      "lat": 47.6152231519934,
+      "lines": "2",
+      "lng": -122.192084303993,
+      "name": "Bellevue Downtown Station",
+      "stopCode": 58
+    },
+    {
+      "lat": 47.6179673467048,
+      "lines": "2",
+      "lng": -122.183761793767,
+      "name": "Wilburton Station",
+      "stopCode": 59
+    },
+    {
+      "lat": 47.6237731891775,
+      "lines": "2",
+      "lng": -122.178573081485,
+      "name": "Spring District/120th Station",
+      "stopCode": 60
+    },
+    {
+      "lat": 47.6244483620133,
+      "lines": "2",
+      "lng": -122.165640324067,
+      "name": "Bel-Red/130th Station",
+      "stopCode": 61
+    },
+    {
+      "lat": 47.6363096313489,
+      "lines": "2",
+      "lng": -122.138919608185,
+      "name": "Overlake Village Station",
+      "stopCode": 62
+    },
+    {
+      "lat": 47.6448415828875,
+      "lines": "2",
+      "lng": -122.133628215678,
+      "name": "Redmond Technology Center Station",
+      "stopCode": 63
+    },
+    {
+      "lat": 47.662,
+      "lines": "2",
+      "lng": -122.118,
+      "name": "Marymoor Village Station",
+      "stopCode": 64
+    },
+    {
+      "lat": 47.6732,
+      "lines": "2",
+      "lng": -122.1248,
+      "name": "Downtown Redmond Station",
+      "stopCode": 65
+    }
+  ],
+  "version": 1
+}

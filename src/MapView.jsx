@@ -36,17 +36,24 @@ const MapView = forwardRef(function MapView({
   const handleMapLoad = useCallback(() => {
     mapLoadedRef.current = true
     setMapLoaded(true)
+    const map = mapRef.current?.getMap()
+    if (map) {
+      map.setTerrain(null)
+    }
+    if (import.meta.env.DEV) {
+      window.__mapForTest = map
+    }
   }, [])
 
   useEffect(() => {
-    if (!mapLoaded || !stationsData) return
+    if (!mapLoaded) return
     const map = mapRef.current?.getMap()
     if (!map) return
-    registerStationIcons(map, stationsData).then(() => {
+    registerStationIcons(map).then(() => {
       iconsReadyRef.current = true
       setIconsReady(true)
     })
-  }, [mapLoaded, stationsData])
+  }, [mapLoaded])
 
   // Apply dark/light mode
   useEffect(() => {
@@ -109,6 +116,7 @@ const MapView = forwardRef(function MapView({
           lightPreset: 'day',
           showPointOfInterestLabels: true,
           densityPointOfInterestLabels: 5,
+          show3dObjects: false,
         },
       }}
     >
