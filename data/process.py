@@ -1,4 +1,4 @@
-"""Process SDOT raw data into app-ready GeoJSON.
+"""Process SDOT raw data into app-ready GeoJSON and station icon sprites.
 
 Reads:
   data/raw/light-rail-alignment.geojson
@@ -8,6 +8,10 @@ Writes:
   public/line1-alignment.geojson
   public/line2-alignment.geojson
   public/all-stations.geojson
+  public/icons/stations.json       (1x sprite manifest)
+  public/icons/stations.png        (1x sprite sheet)
+  public/icons/stations@2x.json    (2x sprite manifest)
+  public/icons/stations@2x.png     (2x sprite sheet)
 
 Run from project root: python3 data/process.py
 """
@@ -15,6 +19,10 @@ Run from project root: python3 data/process.py
 import json
 import math
 import os
+from io import BytesIO
+
+import cairosvg
+from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -493,6 +501,141 @@ def main():
     print(f"Line 1: {len(line1_full)} points")
     print(f"Line 2: {len(line2_full)} points")
     print(f"Shared offset: {OFFSET_METERS}m (Line 1 west, Line 2 east)")
+
+    # ── Generate station icon sprites ──
+    icons_dir = os.path.join(public, "icons")
+    generate_sprites(stations_geojson, icons_dir)
+
+
+# ── Station icon sprite generation ──
+
+LINE_COLORS_HEX = {"1": "#4CAF50", "2": "#0082C8"}
+
+ICON_THEMES = {
+    "light": {
+        "pillBg": "#ffffff",
+        "pillBorder": "#333333",
+        "codeBg": "#e8e8e8",
+        "codeText": "#333333",
+    },
+    "dark": {
+        "pillBg": "#2a2a3a",
+        "pillBorder": "rgba(255,255,255,0.35)",
+        "codeBg": "rgba(255,255,255,0.12)",
+        "codeText": "#dddddd",
+    },
+}
+
+CIRCLE_R = 10
+LINE_TEXT_COLOR = "#ffffff"
+
+
+def create_pill_svg(lines_str, stop_code, mode="light"):
+    """Generate an SVG pill icon — mirrors createPillSVG in stationIcons.js."""
+    t = ICON_THEMES[mode]
+    line_arr = lines_str.split(",")
+    has_code = stop_code is not None
+
+    circle_width = len(line_arr) * (CIRCLE_R * 2 + 2)
+    code_width = 28 if has_code else 0
+    padding = 3
+    gap = 2 if has_code else 0
+    total_width = padding + circle_width + gap + code_width + padding
+    height = CIRCLE_R * 2 + padding * 2
+
+    parts = [
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{total_width}" height="{height}">',
+        f'<rect x="0.5" y="0.5" width="{total_width - 1}" height="{height - 1}" '
+        f'rx="{height / 2}" ry="{height / 2}" fill="{t["pillBg"]}" '
+        f'stroke="{t["pillBorder"]}" stroke-width="1.5"/>',
+    ]
+
+    cx = padding + CIRCLE_R
+    for line in line_arr:
+        color = LINE_COLORS_HEX.get(line, "#999")
+        parts.append(
+            f'<circle cx="{cx}" cy="{height / 2}" r="{CIRCLE_R}" fill="{color}"/>'
+        )
+        parts.append(
+            f'<text x="{cx}" y="{height / 2 + 4}" text-anchor="middle" '
+            f'fill="{LINE_TEXT_COLOR}" '
+            f'font-family="-apple-system,BlinkMacSystemFont,sans-serif" '
+            f'font-size="12" font-weight="bold">{line}</text>'
+        )
+        cx += CIRCLE_R * 2 + 2
+
+    if has_code:
+        box_x = padding + circle_width + gap
+        box_h = height - padding * 2
+        box_y = padding
+        parts.append(
+            f'<rect x="{box_x}" y="{box_y}" width="{code_width}" '
+            f'height="{box_h}" rx="4" ry="4" fill="{t["codeBg"]}"/>'
+        )
+        parts.append(
+            f'<text x="{box_x + code_width / 2}" y="{box_y + box_h / 2 + 4}" '
+            f'text-anchor="middle" fill="{t["codeText"]}" '
+            f'font-family="-apple-system,BlinkMacSystemFont,sans-serif" '
+            f'font-size="10" font-weight="bold">{stop_code}</text>'
+        )
+
+    parts.append("</svg>")
+    return "".join(parts), total_width, height
+
+
+def svg_to_png(svg_str, scale=1):
+    """Convert an SVG string to a PIL Image at the given scale."""
+    png_bytes = cairosvg.svg2png(bytestring=svg_str.encode(), scale=scale)
+    return Image.open(BytesIO(png_bytes))
+
+
+def generate_sprites(stations_geojson, output_dir):
+    """Generate Mapbox-compatible sprite sheets (1x and 2x) for all stations."""
+    # Collect unique icon variants
+    icons = {}  # key -> (lines_str, stop_code)
+    seen = set()
+    for feat in stations_geojson["features"]:
+        lines = feat["properties"].get("lines", "1")
+        code = feat["properties"].get("stopCode")
+        base_key = f"{lines}-{code if code is not None else 'none'}"
+        if base_key in seen:
+            continue
+        seen.add(base_key)
+        for mode in ("light", "dark"):
+            key = f"station-{mode}-{base_key}"
+            icons[key] = (lines, code, mode)
+
+    # Render all icons at both scales
+    for scale, suffix in [(1, ""), (2, "@2x")]:
+        rendered = {}
+        for key, (lines, code, mode) in icons.items():
+            svg, w, h = create_pill_svg(lines, code, mode)
+            img = svg_to_png(svg, scale=scale)
+            rendered[key] = img
+
+        # Pack into a horizontal sprite sheet
+        total_w = sum(img.width for img in rendered.values())
+        max_h = max(img.height for img in rendered.values())
+        sheet = Image.new("RGBA", (total_w, max_h), (0, 0, 0, 0))
+        manifest = {}
+        x = 0
+        for key, img in rendered.items():
+            sheet.paste(img, (x, 0))
+            manifest[key] = {
+                "width": img.width // scale,
+                "height": img.height // scale,
+                "x": x,
+                "y": 0,
+                "pixelRatio": scale,
+            }
+            x += img.width
+
+        os.makedirs(output_dir, exist_ok=True)
+        sheet.save(os.path.join(output_dir, f"stations{suffix}.png"))
+        with open(os.path.join(output_dir, f"stations{suffix}.json"), "w") as f:
+            json.dump(manifest, f)
+
+    print(f"Sprites: {len(icons)} icons → stations.png + stations@2x.png")
 
 
 if __name__ == "__main__":

@@ -46,14 +46,14 @@ const MapView = forwardRef(function MapView({
   }, [])
 
   useEffect(() => {
-    if (!mapLoaded || !stationsData) return
+    if (!mapLoaded) return
     const map = mapRef.current?.getMap()
     if (!map) return
-    registerStationIcons(map, stationsData).then(() => {
+    registerStationIcons(map).then(() => {
       iconsReadyRef.current = true
       setIconsReady(true)
     })
-  }, [mapLoaded, stationsData])
+  }, [mapLoaded])
 
   // Apply dark/light mode
   useEffect(() => {
