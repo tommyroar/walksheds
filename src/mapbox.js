@@ -1,11 +1,19 @@
 import { MAPBOX_TOKEN } from './constants'
 
+const walkshedCache = new Map()
+
 export async function fetchWalkshed(lng, lat, minutes) {
+  const key = `${lng},${lat},${minutes}`
+  const cached = walkshedCache.get(key)
+  if (cached) return cached
+
   const url = `https://api.mapbox.com/isochrone/v1/mapbox/walking/${lng},${lat}`
     + `?contours_minutes=${minutes}&polygons=true&access_token=${MAPBOX_TOKEN}`
   const resp = await fetch(url)
   if (!resp.ok) return null
-  return resp.json()
+  const data = await resp.json()
+  walkshedCache.set(key, data)
+  return data
 }
 
 export function polygonToLine(geojson) {
