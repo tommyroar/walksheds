@@ -221,7 +221,6 @@ export default function Walksheds() {
       {introVisible && stationsData && (
         <Intro
           controls={introControls}
-          walkshedsReady={!!walksheds[5]}
           onClose={() => setIntroVisible(false)}
         />
       )}
