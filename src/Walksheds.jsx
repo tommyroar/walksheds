@@ -1,14 +1,36 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { buildGraph, isJunction, getJunctionHints } from './routeGraph'
 import { fetchWalkshed, getLargestEnabledBounds } from './mapbox'
-import { WALKSHED_OPTIONS, LINE_COLORS, WALKSHED_ACCENT_LIGHT, WALKSHED_ACCENT_DARK, SEATTLE_CENTER, SEATTLE_ZOOM } from './constants'
+import { WALKSHED_OPTIONS, LINE_COLORS, WALKSHED_ACCENT_LIGHT, WALKSHED_ACCENT_DARK, SEATTLE_CENTER, SEATTLE_ZOOM, POI_FILES, POI_CATEGORIES } from './constants'
 import { parseStationPath, buildStationPath, findStationByCode, parseWalkshedParams, buildWalkshedParams } from './deepLink'
+import { filterPOIsInWalkshed, filterByTags, getAvailableTags, mergeFeatureCollections } from './poiUtils'
 import { useNavigation } from './useNavigation'
 import MapView from './MapView'
 import LineLegend from './LineLegend'
+import POISearch from './POISearch'
 import Intro from './Intro'
 import { shouldShowIntro } from './introState'
 import './walksheds.css'
+
+function legendOverlapsWalkshed(map, walksheds, enabledWalksheds) {
+  if (!map) return false
+  const bounds = getLargestEnabledBounds(walksheds, enabledWalksheds)
+  if (!bounds) return false
+  try {
+    const topLeft = map.project(bounds[0])
+    const bottomRight = map.project(bounds[1])
+    const wsLeft = Math.min(topLeft.x, bottomRight.x)
+    const wsBottom = Math.max(topLeft.y, bottomRight.y)
+    const container = map.getContainer()
+    const h = container.clientHeight
+    const legendBottom = h - 32
+    const legendRight = 16 + 180
+    const legendTop = legendBottom - 280
+    return wsLeft < legendRight && wsBottom > legendTop
+  } catch {
+    return false
+  }
+}
 
 function computeLegendPosition(map, walksheds, enabledWalksheds) {
   if (!map) return 'bottom-left'
@@ -46,13 +68,42 @@ export default function Walksheds() {
   })
   const [currentLine, setCurrentLine] = useState(null)
   const [junctionHints, setJunctionHints] = useState([])
-  const [darkMode, setDarkMode] = useState(false)
+  const [darkMode, setDarkMode] = useState(() => {
+    try { return window.localStorage.getItem('walksheds_dark_mode') === '1' } catch { return false }
+  })
   const [line1Data, setLine1Data] = useState(null)
   const [line2Data, setLine2Data] = useState(null)
   const [stationsData, setStationsData] = useState(null)
-  const [legendCollapsed, setLegendCollapsed] = useState(() => window.innerWidth < 480 || window.innerHeight < 500)
+  // Legend collapse: user preference (from localStorage or manual toggle) takes priority.
+  // null = no preference, let auto-collapse decide based on overlap.
+  const [userLegendPref, setUserLegendPref] = useState(() => {
+    try {
+      const stored = window.localStorage.getItem('walksheds_legend_collapsed')
+      if (stored !== null) return stored === '1'
+    } catch { /* private mode */ }
+    return null
+  })
+  const [autoCollapsed, setAutoCollapsed] = useState(false)
+  const legendCollapsed = userLegendPref !== null ? userLegendPref : autoCollapsed
+
+  const toggleLegendCollapsed = useCallback(() => {
+    setUserLegendPref(prev => {
+      const next = prev !== null ? !prev : !autoCollapsed
+      try { window.localStorage.setItem('walksheds_legend_collapsed', next ? '1' : '0') } catch { /* private mode */ }
+      return next
+    })
+  }, [autoCollapsed])
+
+  useEffect(() => {
+    try { window.localStorage.setItem('walksheds_dark_mode', darkMode ? '1' : '0') } catch { /* private mode */ }
+  }, [darkMode])
+
   const [legendPosition, setLegendPosition] = useState('bottom-left')
   const [introVisible, setIntroVisible] = useState(() => shouldShowIntro())
+  const [poiData, setPoiData] = useState({})
+  const [poiFilters, setPoiFilters] = useState(new Set())
+  const [poiPopup, setPoiPopup] = useState(null)
+  const [expandedPoiTag, setExpandedPoiTag] = useState(null)
   const mapViewRef = useRef(null)
   const selectedStationRef = useRef(null)
   const graphRef = useRef(null)
@@ -66,6 +117,11 @@ export default function Walksheds() {
     fetch(`${base}line1-alignment.geojson`).then(r => r.json()).then(setLine1Data)
     fetch(`${base}line2-alignment.geojson`).then(r => r.json()).then(setLine2Data)
     fetch(`${base}all-stations.geojson`).then(r => r.json()).then(setStationsData)
+    for (const cat of POI_FILES) {
+      fetch(`${base}pois/${cat}.geojson`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d) setPoiData(prev => ({ ...prev, [cat]: d })) })
+    }
   }, [])
 
   useEffect(() => {
@@ -92,7 +148,6 @@ export default function Walksheds() {
     setPopup({ longitude: lng, latitude: lat, name, line, stopCode, lines })
     setCurrentLine(line)
     setWalksheds({})
-    setLegendCollapsed(true)
 
     // Sync URL
     if (stopCode != null) {
@@ -125,6 +180,7 @@ export default function Walksheds() {
 
       const map = mapViewRef.current?.getMap()
       setLegendPosition(computeLegendPosition(map, results, enabledWalksheds))
+      setAutoCollapsed(legendOverlapsWalkshed(map, results, enabledWalksheds))
     })
   }, [stationsData, enabledWalksheds])
 
@@ -137,13 +193,96 @@ export default function Walksheds() {
     }
   }, [enabledWalksheds, walksheds])
 
+  // Compute POIs visible within the largest enabled walkshed
+  const walkshedPois = useMemo(() => {
+    const hasWalksheds = Object.keys(walksheds).length > 0
+    const hasPoiData = Object.keys(poiData).length > 0
+    if (!hasWalksheds || !hasPoiData) return { type: 'FeatureCollection', features: [] }
+
+    // Use the largest enabled walkshed as the clipping polygon
+    const sorted = [...enabledWalksheds].sort((a, b) => b - a)
+    let walkshedFC = null
+    for (const min of sorted) {
+      if (walksheds[min]) { walkshedFC = walksheds[min]; break }
+    }
+    if (!walkshedFC) return { type: 'FeatureCollection', features: [] }
+
+    const clipped = POI_FILES
+      .map(cat => poiData[cat] ? filterPOIsInWalkshed(poiData[cat], walkshedFC) : null)
+      .filter(Boolean)
+    return mergeFeatureCollections(...clipped)
+  }, [walksheds, enabledWalksheds, poiData])
+
+  const categoryColors = useMemo(() => Object.fromEntries(
+    Object.entries(POI_CATEGORIES).map(([k, v]) => [k, v.color])
+  ), [])
+
+  const availableTags = useMemo(() => getAvailableTags(walkshedPois.features, categoryColors), [walkshedPois, categoryColors])
+
+  const visiblePois = useMemo(() => {
+    if (poiFilters.size === 0) return walkshedPois
+    const filtered = filterByTags(walkshedPois.features, poiFilters)
+    return { type: 'FeatureCollection', features: filtered }
+  }, [walkshedPois, poiFilters])
+
+  const handleAddPoiFilter = useCallback((tag) => {
+    setPoiFilters(prev => new Set([...prev, tag]))
+  }, [])
+
+  const fitToWalkshed = useCallback(() => {
+    setPoiPopup(null)
+    const bounds = getLargestEnabledBounds(walksheds, enabledWalksheds)
+    if (bounds) {
+      mapViewRef.current?.fitBounds(bounds, { padding: 60, duration: 600 })
+    }
+  }, [walksheds, enabledWalksheds])
+
+  const handleRemovePoiFilter = useCallback((tag) => {
+    setPoiFilters(prev => {
+      const next = new Set(prev)
+      next.delete(tag)
+      if (next.size === 0) fitToWalkshed()
+      return next
+    })
+  }, [fitToWalkshed])
+
+  const handleClearPoiFilters = useCallback(() => {
+    setPoiFilters(new Set())
+    fitToWalkshed()
+  }, [fitToWalkshed])
+
+  const handlePoiClick = useCallback((feature) => {
+    const props = feature.properties
+    const [lng, lat] = feature.geometry.coordinates
+    setPoiPopup({
+      longitude: lng,
+      latitude: lat,
+      name: props.name,
+      category: props.category,
+      tags: typeof props.tags === 'string' ? JSON.parse(props.tags) : props.tags,
+      website: props.website,
+    })
+  }, [])
+
+  const handlePoiSelect = useCallback((feature) => {
+    const [lng, lat] = feature.geometry.coordinates
+    const map = mapViewRef.current?.getMap()
+    if (map) {
+      map.flyTo({ center: [lng, lat], zoom: Math.max(map.getZoom(), 16), duration: 800 })
+    }
+    handlePoiClick(feature)
+  }, [handlePoiClick])
+
+  const handlePoiClose = useCallback(() => setPoiPopup(null), [])
+
   const handleDeselect = useCallback(() => {
     selectedStationRef.current = null
     setPopup(null)
     setWalksheds({})
     setCurrentLine(null)
     setJunctionHints([])
-    setLegendCollapsed(false)
+    setPoiPopup(null)
+    setAutoCollapsed(false)
     setLegendPosition('bottom-left')
     window.history.replaceState(null, '', import.meta.env.BASE_URL)
   }, [])
@@ -179,13 +318,14 @@ export default function Walksheds() {
   useEffect(() => {
     const WALKSHED_KEYS = { '1': 5, '2': 10, '3': 15 }
     const handleKey = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
       if (e.key === 'd') setDarkMode(d => !d)
-      else if (e.key === 'l') setLegendCollapsed(c => !c)
+      else if (e.key === 'l') toggleLegendCollapsed()
       else if (WALKSHED_KEYS[e.key]) handleWalkshedToggle(WALKSHED_KEYS[e.key])
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [handleWalkshedToggle])
+  }, [handleWalkshedToggle, toggleLegendCollapsed])
 
   const introControls = {
     selectByName: useCallback((name) => {
@@ -219,18 +359,42 @@ export default function Walksheds() {
         stationsData={stationsData}
         onStationClick={selectStation}
         onDeselect={handleDeselect}
+        visiblePois={visiblePois}
+        poiPopup={poiPopup}
+        onPoiClick={handlePoiClick}
+        onPoiClose={handlePoiClose}
+        onPoiTagClick={handleAddPoiFilter}
       />
+
+      {Object.keys(poiData).length > 0 && (
+        <POISearch
+          availableTags={availableTags}
+          activeFilters={poiFilters}
+          poiFeatures={walkshedPois.features}
+          expandedTag={expandedPoiTag}
+          onExpandTag={setExpandedPoiTag}
+          onAddFilter={handleAddPoiFilter}
+          onRemoveFilter={handleRemovePoiFilter}
+          onClearFilters={handleClearPoiFilters}
+          onPoiSelect={handlePoiSelect}
+        />
+      )}
 
       <LineLegend
         lineColors={LINE_COLORS}
         enabledWalksheds={enabledWalksheds}
-        walkshedAccent={darkMode ? WALKSHED_ACCENT_DARK : WALKSHED_ACCENT_LIGHT}
+        walkshedAccent={WALKSHED_ACCENT_LIGHT}
         onWalkshedToggle={handleWalkshedToggle}
         darkMode={darkMode}
         onDarkModeToggle={() => setDarkMode(d => !d)}
         collapsed={legendCollapsed}
-        onToggleCollapse={() => setLegendCollapsed(c => !c)}
+        onToggleCollapse={() => toggleLegendCollapsed()}
         position={legendPosition}
+        poiFilters={poiFilters}
+        poiTagColors={availableTags}
+        onRemovePoiFilter={handleRemovePoiFilter}
+        onClearPoiFilters={handleClearPoiFilters}
+        onTagSelect={setExpandedPoiTag}
       />
 
       {introVisible && stationsData && (

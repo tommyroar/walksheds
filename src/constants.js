@@ -26,3 +26,31 @@ export const LINE_COLORS = {
 
 export const WALKSHED_ACCENT_LIGHT = '#0082C8'
 export const WALKSHED_ACCENT_DARK = '#4CAF50'
+
+export const POI_CATEGORIES = {
+  restaurant: { color: '#E67E22', group: 'dining', label: 'Restaurant' },
+  cafe:       { color: '#E67E22', group: 'dining', label: 'Cafe' },
+  bar:        { color: '#E67E22', group: 'dining', label: 'Bar' },
+  fast_food:  { color: '#E67E22', group: 'dining', label: 'Fast Food' },
+  pub:        { color: '#E67E22', group: 'dining', label: 'Pub' },
+  bakery:     { color: '#E67E22', group: 'dining', label: 'Bakery' },
+  ice_cream:  { color: '#E67E22', group: 'dining', label: 'Ice Cream' },
+  museum:     { color: '#8E44AD', group: 'attractions', label: 'Museum' },
+  gallery:    { color: '#8E44AD', group: 'attractions', label: 'Gallery' },
+  attraction: { color: '#8E44AD', group: 'attractions', label: 'Attraction' },
+  artwork:    { color: '#8E44AD', group: 'attractions', label: 'Artwork' },
+  viewpoint:  { color: '#8E44AD', group: 'attractions', label: 'Viewpoint' },
+  park:       { color: '#27AE60', group: 'parks', label: 'Park' },
+  playground: { color: '#27AE60', group: 'parks', label: 'Playground' },
+  garden:     { color: '#27AE60', group: 'parks', label: 'Garden' },
+}
+
+export const POI_GROUP_COLORS = {
+  dining: '#E67E22',
+  attractions: '#8E44AD',
+  parks: '#27AE60',
+}
+
+export const POI_FILES = ['restaurants', 'attractions', 'parks']
+
+export const POI_INTERACTIVE_LAYERS = ['poi-circles']
