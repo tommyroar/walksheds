@@ -20,12 +20,12 @@ export default function WalkshedLayers({ walksheds, enabledWalksheds, darkMode, 
           <Layer
             id={`walkshed-fill-${mode}-${min}`}
             type="fill"
-            paint={{ 'fill-color': accent, 'fill-opacity': style.opacity }}
+            paint={{ 'fill-color': accent, 'fill-opacity': style.opacity, 'fill-emissive-strength': 1.0 }}
           />
           <Layer
             id={`walkshed-outline-${mode}-${min}`}
             type="line"
-            paint={{ 'line-color': accent, 'line-width': style.lineWidth, 'line-opacity': style.outlineOpacity }}
+            paint={{ 'line-color': accent, 'line-width': style.lineWidth, 'line-opacity': style.outlineOpacity, 'line-emissive-strength': 1.0 }}
           />
         </Source>
         <Source id={`walkshed-label-${mode}-${min}`} type="geojson" data={lineData}>

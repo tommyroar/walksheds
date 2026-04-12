@@ -25,4 +25,4 @@ export const LINE_COLORS = {
 }
 
 export const WALKSHED_ACCENT_LIGHT = '#0082C8'
-export const WALKSHED_ACCENT_DARK = '#69F0AE'
+export const WALKSHED_ACCENT_DARK = '#4CAF50'
