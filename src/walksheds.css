@@ -717,3 +717,362 @@ body,
 .mapboxgl-ctrl-attrib a {
   color: rgba(255, 255, 255, 0.5) !important;
 }
+
+/* ── POI Search Box ── */
+
+.poi-search {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  width: 220px;
+}
+
+.poi-search-input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.app.dark .poi-search-input-row {
+  background: rgba(20, 20, 30, 0.88);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.poi-search-icon {
+  color: rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+.app.dark .poi-search-icon {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.poi-search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  color: #333;
+  min-width: 0;
+}
+
+.poi-search-input::placeholder {
+  color: rgba(0, 0, 0, 0.3);
+}
+
+.app.dark .poi-search-input {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.app.dark .poi-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* ── POI Search Dropdown ── */
+
+.poi-search-dropdown {
+  margin-top: 4px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.app.dark .poi-search-dropdown {
+  background: rgba(20, 20, 30, 0.95);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.poi-search-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  color: #333;
+  text-align: left;
+}
+
+.poi-search-option.highlighted {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.app.dark .poi-search-option {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.app.dark .poi-search-option.highlighted {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.poi-search-option-tag {
+  font-weight: 500;
+}
+
+.poi-search-option-count {
+  color: rgba(0, 0, 0, 0.3);
+  font-size: 11px;
+}
+
+.app.dark .poi-search-option-count {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* ── POI Filter Chips ── */
+
+.poi-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.poi-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.poi-chip:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.app.dark .poi-chip {
+  background: rgba(20, 20, 30, 0.85);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.app.dark .poi-chip:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.poi-chip-text {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.poi-chip-x {
+  color: rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
+}
+
+.app.dark .poi-chip-x {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.poi-chip-clear {
+  color: rgba(0, 0, 0, 0.4);
+  border-color: transparent;
+  background: transparent;
+  font-weight: 400;
+}
+
+.app.dark .poi-chip-clear {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* ── POI Popup ── */
+
+.poi-popup-container .mapboxgl-popup-content {
+  padding: 0;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+}
+
+.poi-popup {
+  padding: 10px 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  max-width: 240px;
+}
+
+.poi-popup-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 4px;
+}
+
+.app.dark .poi-popup-name {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.poi-popup-category {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.app.dark .poi-popup-category {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.poi-popup-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.poi-popup-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-bottom: 6px;
+}
+
+.poi-popup-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.06);
+  font-size: 10px;
+  color: #555;
+}
+
+.app.dark .poi-popup-tag {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.poi-popup-link {
+  display: inline-block;
+  font-size: 11px;
+  color: #0082C8;
+  text-decoration: none;
+}
+
+.poi-popup-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Legend: POI filter tags ── */
+
+.legend-poi-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.legend-poi-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  margin: 0 -6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease;
+}
+
+.legend-poi-tag:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.app.dark .legend-poi-tag:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.legend-poi-tag-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #E67E22;
+  flex-shrink: 0;
+}
+
+.legend-poi-tag-text {
+  flex: 1;
+  font-size: 12px;
+  color: #555;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app.dark .legend-poi-tag-text {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.legend-poi-tag-x {
+  color: rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+}
+
+.app.dark .legend-poi-tag-x {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.legend-poi-clear {
+  border: none;
+  background: transparent;
+  padding: 3px 6px;
+  margin: 0 -6px;
+  font-family: inherit;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  text-align: left;
+}
+
+.legend-poi-clear:hover {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.app.dark .legend-poi-clear {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.app.dark .legend-poi-clear:hover {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.legend-collapsed-filter-count {
+  font-size: 10px;
+  font-weight: 600;
+  color: #E67E22;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .poi-search {
+    width: 180px;
+    top: 10px;
+    right: 10px;
+  }
+}
