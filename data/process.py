@@ -502,9 +502,42 @@ def main():
     print(f"Line 2: {len(line2_full)} points")
     print(f"Shared offset: {OFFSET_METERS}m (Line 1 west, Line 2 east)")
 
+    # ── Build station index ──
+    station_index = build_station_index(stations_geojson)
+    index_path = os.path.join(ROOT, "data", "station-index.json")
+    with open(index_path, "w") as f:
+        json.dump(station_index, f, indent=2, sort_keys=True)
+        f.write("\n")
+    print(f"Index: {len(station_index['stations'])} stations → {index_path}")
+
     # ── Generate station icon sprites ──
     icons_dir = os.path.join(public, "icons")
-    generate_sprites(stations_geojson, icons_dir)
+    generate_sprites(station_index, icons_dir)
+
+
+# ── Station index ──
+
+INDEX_VERSION = 1
+
+
+def build_station_index(stations_geojson):
+    """Derive a canonical, diff-friendly station index from the GeoJSON.
+
+    Sorted by (lines, stopCode) so the JSON file diffs cleanly.
+    """
+    stations = []
+    for feat in stations_geojson["features"]:
+        props = feat["properties"]
+        lng, lat = feat["geometry"]["coordinates"]
+        stations.append({
+            "name": props["name"],
+            "lines": props["lines"],
+            "stopCode": props["stopCode"],
+            "lng": lng,
+            "lat": lat,
+        })
+    stations.sort(key=lambda s: (s["lines"], s["stopCode"]))
+    return {"version": INDEX_VERSION, "stations": stations}
 
 
 # ── Station icon sprite generation ──
@@ -589,18 +622,13 @@ def svg_to_png(svg_str, scale=1):
     return Image.open(BytesIO(png_bytes))
 
 
-def generate_sprites(stations_geojson, output_dir):
-    """Generate Mapbox-compatible sprite sheets (1x and 2x) for all stations."""
-    # Collect unique icon variants
-    icons = {}  # key -> (lines_str, stop_code)
-    seen = set()
-    for feat in stations_geojson["features"]:
-        lines = feat["properties"].get("lines", "1")
-        code = feat["properties"].get("stopCode")
-        base_key = f"{lines}-{code if code is not None else 'none'}"
-        if base_key in seen:
-            continue
-        seen.add(base_key)
+def generate_sprites(station_index, output_dir):
+    """Generate Mapbox-compatible sprite sheets (1x and 2x) from the station index."""
+    icons = {}
+    for station in station_index["stations"]:
+        lines = station["lines"]
+        code = station["stopCode"]
+        base_key = f"{lines}-{code}"
         for mode in ("light", "dark"):
             key = f"station-{mode}-{base_key}"
             icons[key] = (lines, code, mode)
