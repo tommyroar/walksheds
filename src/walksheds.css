@@ -57,34 +57,47 @@ body,
   color-scheme: dark;
 }
 
-/* ── Drag bar (expand/collapse handle) ── */
+/* ── Legend header row (dark toggle · title · collapse chevron) ── */
 
-.legend-drag-bar {
+.legend-header {
   display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 0 6px;
+}
+
+.legend-header .legend-title {
+  flex: 1;
+  margin-bottom: 0;
+  text-align: center;
+}
+
+.legend-header-btn {
+  display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 6px 0 2px;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.3);
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+  padding: 0;
+  flex-shrink: 0;
+  transition: color 0.15s ease;
 }
 
-.legend-drag-bar-line {
-  width: 28px;
-  height: 3px;
-  border-radius: 2px;
-  background: rgba(0, 0, 0, 0.18);
-  transition: background 0.15s ease;
+.legend-header-btn:hover {
+  color: rgba(0, 0, 0, 0.6);
 }
 
-.legend-drag-bar:hover .legend-drag-bar-line {
-  background: rgba(0, 0, 0, 0.35);
+.app.dark .legend-header-btn {
+  color: rgba(255, 255, 255, 0.3);
 }
 
-.app.dark .legend-drag-bar-line {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.app.dark .legend-drag-bar:hover .legend-drag-bar-line {
-  background: rgba(255, 255, 255, 0.4);
+.app.dark .legend-header-btn:hover {
+  color: rgba(255, 255, 255, 0.6);
 }
 
 /* ── Collapsed legend bar ── */
@@ -243,37 +256,6 @@ body,
     left: auto;
     right: 8px;
   }
-}
-
-/* ── Dark mode toggle ── */
-
-.legend-dark-toggle {
-  position: absolute;
-  top: 22px;
-  right: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 4px;
-  background: transparent;
-  color: rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-  transition: color 0.15s ease;
-}
-
-.legend-dark-toggle:hover {
-  color: rgba(0, 0, 0, 0.5);
-}
-
-.app.dark .legend-dark-toggle {
-  color: rgba(255, 255, 255, 0.2);
-}
-
-.app.dark .legend-dark-toggle:hover {
-  color: rgba(255, 255, 255, 0.5);
 }
 
 .legend-title {
