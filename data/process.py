@@ -571,7 +571,7 @@ def create_pill_svg(lines_str, stop_code, mode="light"):
 
     circle_width = len(line_arr) * (CIRCLE_R * 2 + 2)
     code_width = 28 if has_code else 0
-    padding = 3
+    padding = 5
     gap = 2 if has_code else 0
     total_width = padding + circle_width + gap + code_width + padding
     height = CIRCLE_R * 2 + padding * 2
