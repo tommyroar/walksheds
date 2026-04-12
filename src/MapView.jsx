@@ -36,8 +36,12 @@ const MapView = forwardRef(function MapView({
   const handleMapLoad = useCallback(() => {
     mapLoadedRef.current = true
     setMapLoaded(true)
+    const map = mapRef.current?.getMap()
+    if (map) {
+      map.setTerrain(null)
+    }
     if (import.meta.env.DEV) {
-      window.__mapForTest = mapRef.current?.getMap()
+      window.__mapForTest = map
     }
   }, [])
 
@@ -112,6 +116,7 @@ const MapView = forwardRef(function MapView({
           lightPreset: 'day',
           showPointOfInterestLabels: true,
           densityPointOfInterestLabels: 5,
+          show3dObjects: false,
         },
       }}
     >

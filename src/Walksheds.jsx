@@ -58,7 +58,10 @@ export default function Walksheds() {
   const graphRef = useRef(null)
   const resolvedRef = useRef(false)
 
+  const dataFetchedRef = useRef(false)
   useEffect(() => {
+    if (dataFetchedRef.current) return
+    dataFetchedRef.current = true
     const base = import.meta.env.BASE_URL
     fetch(`${base}line1-alignment.geojson`).then(r => r.json()).then(setLine1Data)
     fetch(`${base}line2-alignment.geojson`).then(r => r.json()).then(setLine2Data)
