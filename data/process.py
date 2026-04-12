@@ -580,7 +580,7 @@ def create_pill_svg(lines_str, stop_code, mode="light"):
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{total_width}" height="{height}">',
         f'<rect x="0.5" y="0.5" width="{total_width - 1}" height="{height - 1}" '
         f'rx="{height / 2}" ry="{height / 2}" fill="{t["pillBg"]}" '
-        f'stroke="{t["pillBorder"]}" stroke-width="1.5"/>',
+        f'stroke="{t["pillBorder"]}" stroke-width="2"/>',
     ]
 
     cx = padding + CIRCLE_R
