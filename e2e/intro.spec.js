@@ -54,9 +54,10 @@ test.describe('Intro walkthrough', () => {
     await expect(title).toHaveText('Back to Westlake', { timeout: 4000 })
     await nextBtn.click()
 
-    // Step 7: Your turn — final step
+    // Step 7: Your turn — final step, only Got it button
     await expect(title).toHaveText('Your turn', { timeout: 4000 })
     await expect(nextBtn).toHaveText('Got it')
+    await expect(exitBtn).not.toBeVisible()
     await nextBtn.click()
 
     // Intro should be dismissed

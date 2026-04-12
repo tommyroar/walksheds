@@ -86,9 +86,11 @@ export default function Intro({ controls, onClose }) {
         <h2 className="intro-title">{step.title}</h2>
         {step.body && <p className="intro-body">{step.body}</p>}
         <div className="intro-actions">
-          <button type="button" className="intro-btn intro-btn-secondary" onClick={close}>
-            {isFirst ? 'Skip' : 'Exit'}
-          </button>
+          {!isFinal && (
+            <button type="button" className="intro-btn intro-btn-secondary" onClick={close}>
+              {isFirst ? 'Skip' : 'Exit'}
+            </button>
+          )}
           <button
             type="button"
             className="intro-btn intro-btn-primary"
