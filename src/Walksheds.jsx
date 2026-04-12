@@ -175,6 +175,18 @@ export default function Walksheds() {
 
   useNavigation({ graphRef, selectedStationRef, currentLine, selectStation })
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const WALKSHED_KEYS = { '1': 5, '2': 10, '3': 15 }
+    const handleKey = (e) => {
+      if (e.key === 'd') setDarkMode(d => !d)
+      else if (e.key === 'l') setLegendCollapsed(c => !c)
+      else if (WALKSHED_KEYS[e.key]) handleWalkshedToggle(WALKSHED_KEYS[e.key])
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [handleWalkshedToggle])
+
   const introControls = {
     selectByName: useCallback((name) => {
       const feat = stationsData?.features.find(f => f.properties.name === name)
