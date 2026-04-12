@@ -13,6 +13,9 @@ function safeStorage() {
 
 export function shouldShowIntro() {
   if (typeof window === 'undefined') return false
+  // ?intro forces the intro regardless of storage or deep link
+  const params = new URLSearchParams(window.location.search)
+  if (params.has('intro')) return true
   const ls = safeStorage()
   if (ls && ls.getItem(STORAGE_KEY)) return false
   // Skip the intro for deep-linked visits — user already knows what they want
@@ -26,6 +29,15 @@ export function shouldShowIntro() {
 
 export function markIntroSeen() {
   const ls = safeStorage()
-  if (!ls) return
-  try { ls.setItem(STORAGE_KEY, '1') } catch { /* private mode */ }
+  if (ls) {
+    try { ls.setItem(STORAGE_KEY, '1') } catch { /* private mode */ }
+  }
+  // Strip ?intro from the URL so a page refresh doesn't replay
+  if (typeof window !== 'undefined') {
+    const url = new URL(window.location.href)
+    if (url.searchParams.has('intro')) {
+      url.searchParams.delete('intro')
+      window.history.replaceState(null, '', url.pathname + url.search + url.hash)
+    }
+  }
 }
