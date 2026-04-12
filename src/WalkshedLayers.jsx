@@ -5,7 +5,7 @@ import { WALKSHED_STYLES, WALKSHED_ACCENT_LIGHT, WALKSHED_ACCENT_DARK, WALKSHED_
 export default function WalkshedLayers({ walksheds, enabledWalksheds, darkMode, mapLoaded }) {
   if (!mapLoaded) return null
 
-  const accent = darkMode ? WALKSHED_ACCENT_DARK : WALKSHED_ACCENT_LIGHT
+  const accent = WALKSHED_ACCENT_LIGHT
   const styles = darkMode ? WALKSHED_STYLES.dark : WALKSHED_STYLES.light
   const mode = darkMode ? 'dark' : 'light'
 

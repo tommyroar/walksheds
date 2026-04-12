@@ -15,6 +15,7 @@ export function useNavigation({ graphRef, selectedStationRef, currentLine, selec
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
       if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) return
       if (navigateDirection(e.key)) e.preventDefault()
     }

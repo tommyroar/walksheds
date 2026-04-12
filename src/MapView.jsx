@@ -3,6 +3,7 @@ import Map, { Source, Layer } from 'react-map-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { registerStationIcons } from './stationIcons'
 import { MAPBOX_TOKEN, SEATTLE_CENTER, SEATTLE_ZOOM, LINE_COLORS, POI_INTERACTIVE_LAYERS } from './constants'
+import { pointInPolygon } from './poiUtils'
 import WalkshedLayers from './WalkshedLayers'
 import POILayer from './POILayer'
 import StationPill from './StationPill'
@@ -22,6 +23,7 @@ const MapView = forwardRef(function MapView({
   poiPopup,
   onPoiClick,
   onPoiClose,
+  onPoiTagClick,
 }, ref) {
   const mapRef = useRef(null)
   const isDraggingRef = useRef(false)
@@ -97,8 +99,14 @@ const MapView = forwardRef(function MapView({
         return
       }
     }
+    // Don't deselect if click is inside any enabled walkshed
+    const clickPt = [e.lngLat.lng, e.lngLat.lat]
+    for (const min of enabledWalksheds) {
+      const ring = walksheds[min]?.features?.[0]?.geometry?.coordinates?.[0]
+      if (ring && pointInPolygon(clickPt, ring)) return
+    }
     onDeselect()
-  }, [onStationClick, onDeselect, onPoiClick])
+  }, [onStationClick, onDeselect, onPoiClick, walksheds, enabledWalksheds])
 
   const handleMouseEnter = useCallback(() => {
     const map = mapRef.current
@@ -149,14 +157,14 @@ const MapView = forwardRef(function MapView({
       {mapLoaded && line1Data && (
         <Source id="line-1" type="geojson" data={line1Data}>
           <Layer id="line-1-casing" type="line" paint={{ 'line-color': '#000000', 'line-width': 7, 'line-opacity': 0.3 }} />
-          <Layer id="line-1-stroke" type="line" paint={{ 'line-color': LINE_COLORS['1-line'].color, 'line-width': 4, 'line-opacity': 0.9 }} />
+          <Layer id="line-1-stroke" type="line" paint={{ 'line-color': LINE_COLORS['1-line'].color, 'line-width': 4, 'line-opacity': 0.9, 'line-emissive-strength': 1.0 }} />
         </Source>
       )}
 
       {mapLoaded && line2Data && (
         <Source id="line-2" type="geojson" data={line2Data}>
           <Layer id="line-2-casing" type="line" paint={{ 'line-color': '#000000', 'line-width': 7, 'line-opacity': 0.3 }} />
-          <Layer id="line-2-stroke" type="line" paint={{ 'line-color': LINE_COLORS['2-line'].color, 'line-width': 4, 'line-opacity': 0.9 }} />
+          <Layer id="line-2-stroke" type="line" paint={{ 'line-color': LINE_COLORS['2-line'].color, 'line-width': 4, 'line-opacity': 0.9, 'line-emissive-strength': 1.0 }} />
         </Source>
       )}
 
@@ -182,6 +190,7 @@ const MapView = forwardRef(function MapView({
           poiPopup={poiPopup}
           onPoiClick={onPoiClick}
           onPoiClose={onPoiClose}
+          onTagClick={onPoiTagClick}
           darkMode={darkMode}
         />
       )}

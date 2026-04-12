@@ -112,7 +112,7 @@ describe('getAvailableTags', () => {
       makeFeature(0, 0, { tags: ['sushi', 'japanese'] }),
     ]
     const tags = getAvailableTags(features)
-    expect(tags[0]).toEqual({ tag: 'pizza', count: 2 })
+    expect(tags[0]).toEqual({ tag: 'pizza', count: 2, color: null })
     expect(tags).toHaveLength(5)
   })
 
@@ -122,7 +122,7 @@ describe('getAvailableTags', () => {
       makeFeature(0, 0, { tags: ['a', 'c'] }),
     ]
     const tags = getAvailableTags(features)
-    expect(tags[0]).toEqual({ tag: 'a', count: 2 })
+    expect(tags[0]).toEqual({ tag: 'a', count: 2, color: null })
     expect(tags[1].tag).toBe('b')
     expect(tags[2].tag).toBe('c')
   })
@@ -137,7 +137,18 @@ describe('getAvailableTags', () => {
       { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [0, 0] } },
     ]
     const tags = getAvailableTags(features)
-    expect(tags).toEqual([{ tag: 'a', count: 1 }])
+    expect(tags).toEqual([{ tag: 'a', count: 1, color: null }])
+  })
+
+  it('includes dominant category color when categoryColors provided', () => {
+    const features = [
+      makeFeature(0, 0, { tags: ['pizza'], category: 'restaurant' }),
+      makeFeature(0, 0, { tags: ['pizza'], category: 'restaurant' }),
+      makeFeature(0, 0, { tags: ['pizza'], category: 'cafe' }),
+    ]
+    const colors = { restaurant: '#E67E22', cafe: '#E67E22' }
+    const tags = getAvailableTags(features, colors)
+    expect(tags[0]).toEqual({ tag: 'pizza', count: 3, color: '#E67E22' })
   })
 })
 
@@ -158,15 +169,14 @@ describe('filterByTags', () => {
     expect(result).toHaveLength(2)
   })
 
-  it('uses AND logic for multiple tags', () => {
+  it('uses OR logic for multiple tags', () => {
     const result = filterByTags(features, new Set(['pizza', 'italian']))
-    expect(result).toHaveLength(1)
-    expect(result[0].properties.tags).toContain('italian')
+    expect(result).toHaveLength(2) // both pizza features match
   })
 
-  it('returns empty when no features match all tags', () => {
+  it('returns features matching any of the tags', () => {
     const result = filterByTags(features, new Set(['pizza', 'sushi']))
-    expect(result).toHaveLength(0)
+    expect(result).toHaveLength(3) // all three match at least one tag
   })
 
   it('handles features without tags array', () => {
