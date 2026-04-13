@@ -60,19 +60,27 @@ export function useNavigation({ graphRef, selectedStationRef, currentLine, selec
   }, [navigateDirection, selectedStationRef])
 
   // Touch swipe navigation (mobile)
+  // Only respond to single-finger swipes; ignore multi-touch (pinch-to-zoom)
   useEffect(() => {
     let startX = 0
     let startY = 0
+    let tracking = false
     const SWIPE_THRESHOLD = 50
 
     const handleTouchStart = (e) => {
       if (!selectedStationRef.current) return
+      if (e.touches.length !== 1) {
+        tracking = false
+        return
+      }
+      tracking = true
       startX = e.touches[0].clientX
       startY = e.touches[0].clientY
     }
 
     const handleTouchEnd = (e) => {
-      if (!selectedStationRef.current) return
+      if (!selectedStationRef.current || !tracking) return
+      tracking = false
       const dx = e.changedTouches[0].clientX - startX
       const dy = e.changedTouches[0].clientY - startY
 
