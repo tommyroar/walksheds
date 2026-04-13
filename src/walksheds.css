@@ -31,7 +31,7 @@ body,
 
 .line-legend {
   position: absolute;
-  bottom: 32px;
+  bottom: calc(32px + env(safe-area-inset-bottom, 0px));
   left: 16px;
   z-index: 10;
   background: #ffffff;
@@ -105,14 +105,14 @@ body,
 .line-legend.collapsed {
   left: 50%;
   transform: translateX(-50%);
-  bottom: 12px;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   padding: 6px 10px;
   border-radius: 16px;
   max-height: none;
   overflow: visible;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
   gap: 6px;
   max-width: calc(100vw - 24px);
@@ -249,7 +249,7 @@ body,
 
 @media (max-width: 480px) {
   .line-legend:not(.collapsed) {
-    bottom: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     left: 8px;
     padding: 0 14px 10px;
     max-height: 40vh;
@@ -1431,5 +1431,9 @@ body,
     width: 180px;
     top: 10px;
     right: 10px;
+  }
+
+  .poi-search-input {
+    font-size: 16px;
   }
 }
