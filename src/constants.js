@@ -28,29 +28,52 @@ export const WALKSHED_ACCENT_LIGHT = '#0082C8'
 export const WALKSHED_ACCENT_DARK = '#4CAF50'
 
 export const POI_CATEGORIES = {
-  restaurant: { color: '#E67E22', group: 'dining', label: 'Restaurant' },
-  cafe:       { color: '#E67E22', group: 'dining', label: 'Cafe' },
-  bar:        { color: '#E67E22', group: 'dining', label: 'Bar' },
-  fast_food:  { color: '#E67E22', group: 'dining', label: 'Fast Food' },
-  pub:        { color: '#E67E22', group: 'dining', label: 'Pub' },
-  bakery:     { color: '#E67E22', group: 'dining', label: 'Bakery' },
-  ice_cream:  { color: '#E67E22', group: 'dining', label: 'Ice Cream' },
-  museum:     { color: '#8E44AD', group: 'attractions', label: 'Museum' },
-  gallery:    { color: '#8E44AD', group: 'attractions', label: 'Gallery' },
-  attraction: { color: '#8E44AD', group: 'attractions', label: 'Attraction' },
-  artwork:    { color: '#8E44AD', group: 'attractions', label: 'Artwork' },
-  viewpoint:  { color: '#8E44AD', group: 'attractions', label: 'Viewpoint' },
-  park:       { color: '#27AE60', group: 'parks', label: 'Park' },
-  playground: { color: '#27AE60', group: 'parks', label: 'Playground' },
-  garden:     { color: '#27AE60', group: 'parks', label: 'Garden' },
+  restaurant:      { color: '#E67E22', group: 'dining', label: 'Restaurant' },
+  cafe:            { color: '#E67E22', group: 'dining', label: 'Cafe' },
+  bar:             { color: '#E67E22', group: 'dining', label: 'Bar' },
+  fast_food:       { color: '#E67E22', group: 'dining', label: 'Fast Food' },
+  pub:             { color: '#E67E22', group: 'dining', label: 'Pub' },
+  bakery:          { color: '#E67E22', group: 'dining', label: 'Bakery' },
+  ice_cream:       { color: '#E67E22', group: 'dining', label: 'Ice Cream' },
+  museum:          { color: '#8E44AD', group: 'attractions', label: 'Museum' },
+  gallery:         { color: '#8E44AD', group: 'attractions', label: 'Gallery' },
+  attraction:      { color: '#8E44AD', group: 'attractions', label: 'Attraction' },
+  artwork:         { color: '#8E44AD', group: 'attractions', label: 'Artwork' },
+  viewpoint:       { color: '#8E44AD', group: 'attractions', label: 'Viewpoint' },
+  park:            { color: '#27AE60', group: 'parks', label: 'Park' },
+  playground:      { color: '#27AE60', group: 'parks', label: 'Playground' },
+  garden:          { color: '#27AE60', group: 'parks', label: 'Garden' },
+  hotel:           { color: '#2980B9', group: 'lodging', label: 'Hotel' },
+  hostel:          { color: '#2980B9', group: 'lodging', label: 'Hostel' },
+  motel:           { color: '#2980B9', group: 'lodging', label: 'Motel' },
+  guest_house:     { color: '#2980B9', group: 'lodging', label: 'Guest House' },
+  supermarket:     { color: '#16A085', group: 'shopping', label: 'Supermarket' },
+  convenience:     { color: '#16A085', group: 'shopping', label: 'Convenience Store' },
+  pharmacy:        { color: '#E74C3C', group: 'healthcare', label: 'Pharmacy' },
+  hospital:        { color: '#E74C3C', group: 'healthcare', label: 'Hospital' },
+  clinic:          { color: '#E74C3C', group: 'healthcare', label: 'Clinic' },
+  library:         { color: '#F1C40F', group: 'services', label: 'Library' },
+  bank:            { color: '#F1C40F', group: 'services', label: 'Bank' },
+  post_office:     { color: '#F1C40F', group: 'services', label: 'Post Office' },
+  fitness_centre:  { color: '#E91E63', group: 'fitness', label: 'Gym' },
+  sports_centre:   { color: '#E91E63', group: 'fitness', label: 'Sports Center' },
+  swimming_pool:   { color: '#E91E63', group: 'fitness', label: 'Swimming Pool' },
 }
 
 export const POI_GROUP_COLORS = {
   dining: '#E67E22',
   attractions: '#8E44AD',
   parks: '#27AE60',
+  lodging: '#2980B9',
+  shopping: '#16A085',
+  healthcare: '#E74C3C',
+  services: '#F1C40F',
+  fitness: '#E91E63',
 }
 
-export const POI_FILES = ['restaurants', 'attractions', 'parks']
+export const POI_FILES = [
+  'restaurants', 'attractions', 'parks',
+  'lodging', 'shopping', 'healthcare', 'services', 'fitness',
+]
 
 export const POI_INTERACTIVE_LAYERS = ['poi-circles']
