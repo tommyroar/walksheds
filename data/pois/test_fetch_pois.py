@@ -155,6 +155,31 @@ class TestExtractTags:
         tags = extract_tags({"amenity": "bar", "cuisine": ""}, "amenity")
         assert tags == ["bar"]
 
+    def test_star_rating(self):
+        tags = extract_tags({"tourism": "hotel", "stars": "4"}, "tourism")
+        assert "4-star" in tags
+
+    def test_invalid_star_rating_ignored(self):
+        tags = extract_tags({"tourism": "hotel", "stars": "superior"}, "tourism")
+        assert not any("star" in t for t in tags)
+
+    def test_wifi(self):
+        tags = extract_tags({"tourism": "hotel", "internet_access": "wlan"}, "tourism")
+        assert "wifi" in tags
+
+    def test_organic(self):
+        tags = extract_tags({"shop": "supermarket", "organic": "yes"}, "shop")
+        assert "organic" in tags
+
+    def test_emergency(self):
+        tags = extract_tags({"amenity": "hospital", "emergency": "yes"}, "amenity")
+        assert "emergency" in tags
+
+    def test_sport_type(self):
+        tags = extract_tags({"leisure": "fitness_centre", "sport": "swimming;tennis"}, "leisure")
+        assert "swimming" in tags
+        assert "tennis" in tags
+
 
 # ── normalize_element ──
 
@@ -272,8 +297,18 @@ class TestCategories:
         assert "restaurants" in CATEGORIES
         assert "attractions" in CATEGORIES
         assert "parks" in CATEGORIES
+        assert "lodging" in CATEGORIES
+        assert "shopping" in CATEGORIES
+        assert "healthcare" in CATEGORIES
+        assert "services" in CATEGORIES
+        assert "fitness" in CATEGORIES
 
     def test_valid_categories_populated(self):
         assert "restaurant" in VALID_CATEGORIES
         assert "museum" in VALID_CATEGORIES
         assert "park" in VALID_CATEGORIES
+        assert "hotel" in VALID_CATEGORIES
+        assert "supermarket" in VALID_CATEGORIES
+        assert "pharmacy" in VALID_CATEGORIES
+        assert "library" in VALID_CATEGORIES
+        assert "fitness_centre" in VALID_CATEGORIES

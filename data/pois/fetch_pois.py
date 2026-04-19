@@ -38,6 +38,11 @@ CATEGORIES = {
     "restaurants": ("amenity", ["restaurant", "cafe", "bar", "fast_food", "pub", "ice_cream", "bakery"]),
     "attractions": ("tourism", ["museum", "gallery", "attraction", "artwork", "viewpoint"]),
     "parks": ("leisure", ["park", "playground", "garden"]),
+    "lodging": ("tourism", ["hotel", "hostel", "motel", "guest_house"]),
+    "shopping": ("shop", ["supermarket", "convenience"]),
+    "healthcare": ("amenity", ["pharmacy", "hospital", "clinic"]),
+    "services": ("amenity", ["library", "bank", "post_office"]),
+    "fitness": ("leisure", ["fitness_centre", "sports_centre", "swimming_pool"]),
 }
 
 # Valid categories for output features
@@ -130,6 +135,31 @@ def extract_tags(osm_tags, osm_key):
     # Child-friendly
     if osm_tags.get("kids_area") == "yes" or osm_tags.get("highchair") in ("yes", "available"):
         tags.append("child-friendly")
+
+    # Lodging: star rating
+    stars = osm_tags.get("stars", "")
+    if stars in ("1", "2", "3", "4", "5"):
+        tags.append(f"{stars}-star")
+
+    # Lodging: wifi
+    if osm_tags.get("internet_access") in ("wlan", "yes", "wifi"):
+        tags.append("wifi")
+
+    # Shopping: organic
+    if osm_tags.get("organic") in ("yes", "only"):
+        tags.append("organic")
+
+    # Healthcare: emergency
+    if osm_tags.get("emergency") == "yes":
+        tags.append("emergency")
+
+    # Fitness: sport type
+    sport = osm_tags.get("sport", "")
+    if sport:
+        for s in sport.split(";"):
+            s = s.strip().lower().replace("_", "-")
+            if s:
+                tags.append(s)
 
     # Deduplicate preserving order
     seen = set()
