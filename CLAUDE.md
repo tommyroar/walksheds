@@ -16,7 +16,9 @@ npm run test          # Vitest unit tests (watch mode)
 npm run test -- --run # Vitest unit tests (single run)
 npm run e2e           # Playwright smoke tests
 npm run preview       # Preview production build
-python3 data/process.py  # Regenerate GeoJSON from SDOT raw data
+python3 data/process.py          # Regenerate transit GeoJSON from SDOT raw data
+python3 data/pois/fetch_pois.py  # Rebuild POI GeoJSONs from committed OSM dump (no network)
+python3 data/pois/fetch_pois.py --refresh  # Refetch OSM dump from Overpass, then rebuild
 ```
 
 ## Architecture
@@ -29,10 +31,26 @@ python3 data/process.py  # Regenerate GeoJSON from SDOT raw data
 
 ## Data Pipeline
 
+### Transit (SDOT → public/)
 Raw SDOT data in `data/raw/` → `data/process.py` → processed GeoJSON in `public/`:
 - `line1-alignment.geojson` / `line2-alignment.geojson` — curved route lines (Chaikin-smoothed SDOT points)
 - `all-stations.geojson` — 38 stations with stop codes, line assignments, shared flag
 - Line 1 offset west, Line 2 offset east in the shared segment (Lynnwood → Intl District)
+
+`data/refresh.py` re-downloads the raw SDOT GeoJSON from Seattle ArcGIS (only needed when Sound Transit publishes updates), then runs `process.py`. Everything else reads from the committed raw files — no network required.
+
+### POIs (OSM → public/pois/)
+Two phases, with the raw Overpass dump committed to the repo:
+
+1. **Refresh** (needs network to `overpass-api.de`): `python3 data/pois/fetch_pois.py --refresh` runs one broad Overpass query covering every named node/way tagged with `amenity`/`tourism`/`leisure`/`shop` inside the station bbox, and writes `data/pois/raw/osm-seattle.json.gz` (~1.5 MB).
+2. **Build** (no network, default): `python3 data/pois/fetch_pois.py` reads the committed raw dump, applies `CATEGORIES` filters + `extract_tags`, and writes per-category GeoJSONs to `public/pois/`.
+
+Adding a new POI category:
+1. Edit `CATEGORIES` in `data/pois/fetch_pois.py`. The osm_key must be in `RAW_KEYS`.
+2. Run `python3 data/pois/fetch_pois.py` — rebuilds from the committed dump, no network.
+3. Wire into `src/constants.js`. Commit.
+
+Only add a new key to `RAW_KEYS` + run `--refresh` if a new category uses an OSM tag key not already covered by the dump.
 
 ## Deployment
 

@@ -1,19 +1,28 @@
 #!/usr/bin/env python3
-"""Fetch POI data from OpenStreetMap via Overpass API.
+"""Build per-category POI GeoJSONs from a committed OpenStreetMap dump.
 
-Queries the Overpass API for restaurants, attractions, and parks within the
-bounding box of all Link Light Rail stations. Produces one GeoJSON file per
-category in public/pois/.
+Two phases:
+  1. Refresh raw dump (network): one Overpass query pulls every named node/way
+     tagged with any of {amenity, tourism, leisure, shop} inside the station
+     bbox, saved gzipped to data/pois/raw/osm-seattle.json.gz.
+  2. Build (no network, default): reads the committed raw dump and filters it
+     into one GeoJSON per CATEGORIES entry under public/pois/.
+
+Adding a new POI category only requires editing CATEGORIES below and re-running
+the default build — no network needed, as long as the tag keys are already in
+the raw dump (amenity/tourism/leisure/shop).
 
 Usage:
-  python3 data/pois/fetch_pois.py                          # fetch all categories
-  python3 data/pois/fetch_pois.py --category restaurants    # single category
-  python3 data/pois/fetch_pois.py --validate-only           # validate existing files
-  python3 data/pois/fetch_pois.py --dry-run                 # fetch + validate, don't write
-  python3 data/pois/fetch_pois.py --sample-station "Judkins Park"  # show sample around station
+  python3 data/pois/fetch_pois.py                          # build all from raw dump
+  python3 data/pois/fetch_pois.py --category restaurants   # build single category
+  python3 data/pois/fetch_pois.py --refresh                # refetch raw dump, then build
+  python3 data/pois/fetch_pois.py --validate-only          # validate existing GeoJSONs
+  python3 data/pois/fetch_pois.py --dry-run                # build + validate, don't write
+  python3 data/pois/fetch_pois.py --sample-station "Judkins Park"
 """
 
 import argparse
+import gzip
 import json
 import math
 import os
@@ -26,12 +35,16 @@ import urllib.error
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 STATION_INDEX = os.path.join(ROOT, "data", "station-index.json")
 OUTPUT_DIR = os.path.join(ROOT, "public", "pois")
+RAW_DUMP = os.path.join(ROOT, "data", "pois", "raw", "osm-seattle.json.gz")
 
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
-OVERPASS_TIMEOUT = 60
+OVERPASS_TIMEOUT = 180
 
 # Padding around station bounding box in degrees (~1.5km ≈ 0.014°)
 BBOX_PAD = 0.014
+
+# OSM tag keys covered by the raw dump. Any category must use one of these.
+RAW_KEYS = ("amenity", "tourism", "leisure", "shop")
 
 # Category definitions: name → (osm_key, osm_values)
 CATEGORIES = {
@@ -70,19 +83,18 @@ def compute_bbox(stations):
     ]
 
 
-def build_overpass_query(bbox, osm_key, osm_values):
-    """Build an Overpass QL query for nodes and ways with given tags in bbox."""
+def build_raw_query(bbox, keys=RAW_KEYS):
+    """Build a single Overpass query covering every named node/way with any of the given tag keys."""
     bbox_str = f"{bbox[0]},{bbox[1]},{bbox[2]},{bbox[3]}"
-    value_regex = "|".join(osm_values)
-
-    # Query both nodes and ways (ways capture parks/gardens which are polygons)
-    query = f"""[out:json][timeout:{OVERPASS_TIMEOUT}];
-(
-  node["{osm_key}"~"^({value_regex})$"]["name"~"."]({bbox_str});
-  way["{osm_key}"~"^({value_regex})$"]["name"~"."]({bbox_str});
-);
-out center tags;"""
-    return query
+    clauses = []
+    for key in keys:
+        clauses.append(f'  node["{key}"]["name"~"."]({bbox_str});')
+        clauses.append(f'  way["{key}"]["name"~"."]({bbox_str});')
+    return (
+        f"[out:json][timeout:{OVERPASS_TIMEOUT}];\n"
+        f"(\n" + "\n".join(clauses) + "\n);\n"
+        f"out center tags;"
+    )
 
 
 def fetch_overpass(query):
@@ -93,7 +105,7 @@ def fetch_overpass(query):
 
     for attempt in range(3):
         try:
-            with urllib.request.urlopen(req, timeout=OVERPASS_TIMEOUT + 10) as resp:
+            with urllib.request.urlopen(req, timeout=OVERPASS_TIMEOUT + 30) as resp:
                 return json.loads(resp.read().decode("utf-8"))
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
             if attempt < 2:
@@ -102,6 +114,46 @@ def fetch_overpass(query):
                 time.sleep(wait)
             else:
                 raise
+
+
+def refresh_raw_dump(bbox, out_path=RAW_DUMP, dry_run=False):
+    """Fetch the Overpass superset for the bbox and write it gzipped to out_path."""
+    query = build_raw_query(bbox)
+    print("Refreshing raw OSM dump from Overpass...")
+    print(f"  Keys: {', '.join(RAW_KEYS)}")
+    print(f"  Bbox: {bbox}")
+
+    result = fetch_overpass(query)
+    elements = result.get("elements", [])
+    print(f"  → {len(elements):,} elements")
+
+    if dry_run:
+        print("  [dry-run] Skipping write")
+        return result
+
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    compact = json.dumps(result, separators=(",", ":")).encode("utf-8")
+    with gzip.open(out_path, "wb", compresslevel=9) as f:
+        f.write(compact)
+    print(f"  Wrote {out_path} ({os.path.getsize(out_path):,} bytes gzipped)")
+    return result
+
+
+def load_raw_dump(path=RAW_DUMP):
+    """Load the committed gzipped raw Overpass dump."""
+    if not os.path.exists(path):
+        raise FileNotFoundError(
+            f"Raw dump not found at {path}. "
+            f"Run `python3 data/pois/fetch_pois.py --refresh` to fetch it from Overpass."
+        )
+    with gzip.open(path, "rb") as f:
+        return json.loads(f.read().decode("utf-8"))
+
+
+def filter_elements(elements, osm_key, osm_values):
+    """Filter raw Overpass elements to those matching osm_key in osm_values."""
+    wanted = set(osm_values)
+    return [el for el in elements if el.get("tags", {}).get(osm_key) in wanted]
 
 
 def extract_tags(osm_tags, osm_key):
@@ -218,19 +270,21 @@ def normalize_element(element, osm_key):
     }
 
 
-def fetch_category(category_name, bbox):
-    """Fetch all POIs for a category and return a GeoJSON FeatureCollection."""
+def build_category(elements, category_name):
+    """Build a GeoJSON FeatureCollection for a category from raw Overpass elements."""
     osm_key, osm_values = CATEGORIES[category_name]
-    query = build_overpass_query(bbox, osm_key, osm_values)
+    if osm_key not in RAW_KEYS:
+        raise ValueError(
+            f"Category {category_name} uses osm_key '{osm_key}' which is not in the raw dump "
+            f"(keys: {RAW_KEYS}). Add it to RAW_KEYS and re-run with --refresh."
+        )
 
-    print(f"  Fetching {category_name} ({osm_key} in {osm_values})...")
-    result = fetch_overpass(query)
-    elements = result.get("elements", [])
-    print(f"  → {len(elements)} raw elements")
+    matched = filter_elements(elements, osm_key, osm_values)
+    print(f"  {category_name}: {len(matched)} raw elements match {osm_key} in {osm_values}")
 
     features = []
     seen_ids = set()
-    for el in elements:
+    for el in matched:
         feat = normalize_element(el, osm_key)
         if feat and feat["properties"]["id"] not in seen_ids:
             seen_ids.add(feat["properties"]["id"])
@@ -343,10 +397,12 @@ def sample_near_station(all_fcs, station_name, stations, radius=1200):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch POI data from OpenStreetMap")
-    parser.add_argument("--category", choices=list(CATEGORIES.keys()), help="Fetch single category")
+    parser = argparse.ArgumentParser(description="Build POI GeoJSONs from committed OSM dump")
+    parser.add_argument("--category", choices=list(CATEGORIES.keys()), help="Build single category")
+    parser.add_argument("--refresh", action="store_true",
+                        help="Refetch raw OSM dump from Overpass before building")
     parser.add_argument("--validate-only", action="store_true", help="Validate existing files only")
-    parser.add_argument("--dry-run", action="store_true", help="Fetch + validate, don't write")
+    parser.add_argument("--dry-run", action="store_true", help="Build + validate, don't write")
     parser.add_argument("--sample-station", type=str, help="Print sample around a station")
     args = parser.parse_args()
 
@@ -355,7 +411,7 @@ def main():
     print(f"Bounding box: {bbox}")
     print(f"Stations: {len(stations)}")
 
-    categories_to_fetch = [args.category] if args.category else list(CATEGORIES.keys())
+    categories_to_build = [args.category] if args.category else list(CATEGORIES.keys())
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     all_fcs = {}
@@ -363,7 +419,7 @@ def main():
     if args.validate_only:
         print("\nValidating existing files...")
         all_errors = []
-        for cat in categories_to_fetch:
+        for cat in categories_to_build:
             path = os.path.join(OUTPUT_DIR, f"{cat}.geojson")
             if not os.path.exists(path):
                 all_errors.append(f"{cat}: file not found at {path}")
@@ -383,10 +439,18 @@ def main():
         else:
             print("\nAll files valid.")
     else:
-        print("\nFetching from Overpass API...")
+        if args.refresh:
+            refresh_raw_dump(bbox, dry_run=args.dry_run)
+
+        print("\nLoading raw dump...")
+        raw = load_raw_dump()
+        elements = raw.get("elements", [])
+        print(f"  {len(elements):,} elements in dump")
+
+        print("\nBuilding categories...")
         all_errors = []
-        for cat in categories_to_fetch:
-            fc = fetch_category(cat, bbox)
+        for cat in categories_to_build:
+            fc = build_category(elements, cat)
             all_fcs[cat] = fc
             errors = validate_geojson(fc, cat, bbox)
             all_errors.extend(errors)

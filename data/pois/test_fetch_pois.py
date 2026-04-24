@@ -11,12 +11,15 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from fetch_pois import (
     compute_bbox,
-    build_overpass_query,
+    build_raw_query,
+    filter_elements,
     extract_tags,
     normalize_element,
+    build_category,
     validate_geojson,
     haversine_dist,
     CATEGORIES,
+    RAW_KEYS,
     VALID_CATEGORIES,
 )
 
@@ -89,25 +92,62 @@ class TestComputeBbox:
         assert bbox[2] > max(s["lat"] for s in SAMPLE_STATIONS)
 
 
-# ── build_overpass_query ──
+# ── build_raw_query ──
 
 
-class TestBuildOverpassQuery:
+class TestBuildRawQuery:
+    BBOX = [47.3, -122.35, 47.7, -122.1]
+
     def test_query_contains_bbox(self):
-        bbox = [47.3, -122.35, 47.7, -122.1]
-        query = build_overpass_query(bbox, "amenity", ["restaurant", "cafe"])
+        query = build_raw_query(self.BBOX)
         assert "47.3,-122.35,47.7,-122.1" in query
 
-    def test_query_contains_tags(self):
-        bbox = [47.3, -122.35, 47.7, -122.1]
-        query = build_overpass_query(bbox, "amenity", ["restaurant", "cafe"])
-        assert '"amenity"' in query
-        assert "restaurant|cafe" in query
+    def test_query_covers_all_raw_keys(self):
+        query = build_raw_query(self.BBOX)
+        for key in RAW_KEYS:
+            assert f'"{key}"' in query
+
+    def test_query_queries_nodes_and_ways(self):
+        query = build_raw_query(self.BBOX)
+        # One node clause and one way clause per key
+        assert query.count("node[") == len(RAW_KEYS)
+        assert query.count("way[") == len(RAW_KEYS)
 
     def test_query_requires_name(self):
-        bbox = [47.3, -122.35, 47.7, -122.1]
-        query = build_overpass_query(bbox, "amenity", ["restaurant"])
+        query = build_raw_query(self.BBOX)
         assert '"name"~"."' in query
+
+    def test_custom_keys(self):
+        query = build_raw_query(self.BBOX, keys=("amenity",))
+        assert '"amenity"' in query
+        assert '"tourism"' not in query
+
+
+# ── filter_elements ──
+
+
+class TestFilterElements:
+    def test_matches_by_key_and_value(self):
+        elements = [
+            _make_node(1, "A", amenity="restaurant"),
+            _make_node(2, "B", amenity="bar"),
+            _make_node(3, "C", amenity="pharmacy"),
+        ]
+        matched = filter_elements(elements, "amenity", ["restaurant", "bar"])
+        ids = {el["id"] for el in matched}
+        assert ids == {1, 2}
+
+    def test_ignores_other_keys(self):
+        elements = [
+            _make_node(1, "A", amenity="restaurant"),
+            _make_way(2, "Park", leisure="park"),
+        ]
+        matched = filter_elements(elements, "leisure", ["park"])
+        assert [el["id"] for el in matched] == [2]
+
+    def test_empty_values_matches_nothing(self):
+        elements = [_make_node(1, "A", amenity="restaurant")]
+        assert filter_elements(elements, "amenity", []) == []
 
 
 # ── extract_tags ──
@@ -312,3 +352,54 @@ class TestCategories:
         assert "pharmacy" in VALID_CATEGORIES
         assert "library" in VALID_CATEGORIES
         assert "fitness_centre" in VALID_CATEGORIES
+
+    def test_all_category_keys_covered_by_raw_dump(self):
+        """Every CATEGORIES entry must use a tag key fetched by the raw dump.
+
+        If this fails, either add the key to RAW_KEYS (and re-run --refresh)
+        or move the category under an existing RAW_KEYS key.
+        """
+        for name, (osm_key, _values) in CATEGORIES.items():
+            assert osm_key in RAW_KEYS, (
+                f"Category '{name}' uses osm_key '{osm_key}' missing from RAW_KEYS {RAW_KEYS}"
+            )
+
+
+# ── build_category ──
+
+
+class TestBuildCategory:
+    def test_filters_and_normalizes(self):
+        elements = [
+            _make_node(1, "Pizza Place", amenity="restaurant", extra_tags={"cuisine": "pizza"}),
+            _make_node(2, "Some Bar", amenity="bar"),
+            _make_node(3, "A Pharmacy", amenity="pharmacy"),
+            _make_way(4, "Green Park", leisure="park"),
+        ]
+        fc = build_category(elements, "restaurants")
+        assert fc["type"] == "FeatureCollection"
+        names = {f["properties"]["name"] for f in fc["features"]}
+        assert names == {"Pizza Place", "Some Bar"}
+
+    def test_skips_unnamed(self):
+        elements = [
+            _make_node(1, "Real Place", amenity="restaurant"),
+            {"type": "node", "id": 2, "lat": 47.59, "lon": -122.30,
+             "tags": {"amenity": "restaurant"}},  # no name
+        ]
+        fc = build_category(elements, "restaurants")
+        assert len(fc["features"]) == 1
+
+    def test_deduplicates_ids(self):
+        elements = [
+            _make_node(1, "Place", amenity="restaurant"),
+            _make_node(1, "Place Duplicate", amenity="restaurant"),
+        ]
+        fc = build_category(elements, "restaurants")
+        assert len(fc["features"]) == 1
+
+    def test_rejects_category_with_unknown_key(self, monkeypatch):
+        import fetch_pois
+        monkeypatch.setitem(fetch_pois.CATEGORIES, "_bogus", ("highway", ["bus_stop"]))
+        with pytest.raises(ValueError, match="not in the raw dump"):
+            build_category([], "_bogus")
