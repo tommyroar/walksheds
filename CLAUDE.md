@@ -52,6 +52,14 @@ Adding a new POI category:
 
 Only add a new key to `RAW_KEYS` + run `--refresh` if a new category uses an OSM tag key not already covered by the dump.
 
+Tag extraction (`extract_tags` in `fetch_pois.py`) is config-driven:
+- `BOOL_TAG_FIELDS` — `{osm_field: (tag_name, accepted_values)}` for boolean qualifiers (e.g. `microbrewery=yes` → "microbrew"). Add a row to expose a new tag — no code changes needed.
+- `MULTI_VALUE_FIELDS` — semicolon-split fields where each value becomes its own tag (`cuisine`, `sport`).
+- `VALUE_AS_TAG_FIELDS` — fields where the value itself is the tag (`craft` → "brewery", "distillery").
+Restaurants currently surface ~260 unique tag values; the frontend chip list (`getAvailableTags` in `src/poiUtils.js`) sorts by count desc, so common ones bubble up.
+
+Per-feature properties on output GeoJSON: `id` (OSM node/way id), `name`, `category`, `tags[]`, plus optional `address`, `website`, `phone`, `hours`.
+
 ## Deployment
 
 React SPA deployed to GitHub Pages via `.github/workflows/deploy.yml` on push to main.

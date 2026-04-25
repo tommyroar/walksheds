@@ -156,64 +156,124 @@ def filter_elements(elements, osm_key, osm_values):
     return [el for el in elements if el.get("tags", {}).get(osm_key) in wanted]
 
 
+# Boolean fields whose presence (with one of the accepted values) emits a tag.
+# Tag name is the published string; multiple OSM fields can map to the same tag
+# (e.g. drink:wine and wine both → "wine").
+BOOL_TAG_FIELDS = {
+    # Service style
+    "outdoor_seating":  ("outdoor-seating",       {"yes"}),
+    "indoor_seating":   ("indoor-seating",        {"yes"}),
+    "takeaway":         ("takeaway",              {"yes", "only"}),
+    "delivery":         ("delivery",              {"yes"}),
+    "drive_through":    ("drive-through",         {"yes"}),
+    "self_service":     ("self-service",          {"yes"}),
+    "reservation":      ("reservations",          {"yes", "required", "recommended"}),
+
+    # Accessibility
+    "wheelchair":       ("wheelchair-accessible", {"yes"}),
+
+    # Diet
+    "diet:vegetarian":  ("vegetarian",   {"yes", "only"}),
+    "diet:vegan":       ("vegan",        {"yes", "only"}),
+    "diet:gluten_free": ("gluten-free",  {"yes", "only"}),
+    "diet:halal":       ("halal",        {"yes", "only"}),
+    "diet:kosher":      ("kosher",       {"yes", "only"}),
+    "diet:dairy_free":  ("dairy-free",   {"yes", "only"}),
+
+    # Family / pets
+    "kids_area":        ("child-friendly", {"yes"}),
+    "highchair":        ("child-friendly", {"yes", "available"}),
+    "dog":              ("dog-friendly",   {"yes", "leashed", "unleashed", "outside"}),
+    "dogs":             ("dog-friendly",   {"yes", "leashed", "unleashed", "outside"}),
+
+    # Drinks
+    "bar":              ("has-bar",   {"yes"}),
+    "wine":             ("wine",      {"yes"}),
+    "beer":             ("beer",      {"yes"}),
+    "cocktails":        ("cocktails", {"yes"}),
+    "coffee":           ("coffee",    {"yes"}),
+    "tea":              ("tea",       {"yes"}),
+    "drink:wine":       ("wine",      {"yes"}),
+    "drink:beer":       ("beer",      {"yes"}),
+    "drink:cocktail":   ("cocktails", {"yes"}),
+    "drink:cocktails":  ("cocktails", {"yes"}),
+    "drink:coffee":     ("coffee",    {"yes"}),
+    "drink:tea":        ("tea",       {"yes"}),
+    "microbrewery":     ("microbrew", {"yes"}),
+    "brewery":          ("brewery",   {"yes"}),
+
+    # Meal periods
+    "breakfast":        ("breakfast", {"yes"}),
+    "brunch":           ("brunch",    {"yes"}),
+    "lunch":            ("lunch",     {"yes"}),
+    "dinner":           ("dinner",    {"yes"}),
+
+    # Vibes
+    "live_music":       ("live-music",      {"yes"}),
+    "karaoke":          ("karaoke",         {"yes"}),
+    "smoking":          ("smoking",         {"yes", "outside", "separated", "dedicated", "isolated"}),
+    "air_conditioning": ("air-conditioned", {"yes"}),
+    "internet_access":  ("wifi",            {"yes", "wlan", "wifi"}),
+
+    # Shopping
+    "organic":          ("organic",     {"yes", "only"}),
+    "second_hand":      ("second-hand", {"yes", "only"}),
+
+    # Healthcare
+    "emergency":        ("emergency", {"yes"}),
+
+    # Lodging amenities
+    "swimming_pool":    ("pool", {"yes"}),
+    "spa":              ("spa",  {"yes"}),
+    "gym":              ("gym",  {"yes"}),
+}
+
+# Semicolon-delimited fields where each value becomes its own normalized tag.
+MULTI_VALUE_FIELDS = ("cuisine", "sport")
+
+# Fields whose value itself becomes a normalized tag (e.g. craft=brewery → "brewery").
+VALUE_AS_TAG_FIELDS = ("craft",)
+
+
+def _normalize(value):
+    return value.strip().lower().replace("_", "-")
+
+
 def extract_tags(osm_tags, osm_key):
-    """Extract searchable tags from OSM tag dict."""
+    """Extract searchable tags from an OSM tag dict.
+
+    Tag sources:
+      - Primary category value (e.g. amenity=restaurant → "restaurant")
+      - Multi-value fields (cuisine, sport) split on ';'
+      - Value-as-tag fields (craft)
+      - Boolean fields in BOOL_TAG_FIELDS with accepted values
+      - Star rating (1-5)
+    """
     tags = []
 
-    # The primary category value (e.g. "restaurant", "cafe")
     primary = osm_tags.get(osm_key, "")
     if primary:
         tags.append(primary)
 
-    # Cuisine
-    cuisine = osm_tags.get("cuisine", "")
-    if cuisine:
-        for c in cuisine.split(";"):
-            c = c.strip().lower().replace("_", "-")
-            if c:
-                tags.append(c)
+    for field in MULTI_VALUE_FIELDS:
+        for raw in osm_tags.get(field, "").split(";"):
+            value = _normalize(raw)
+            if value:
+                tags.append(value)
 
-    # Boolean feature tags
-    bool_tags = {
-        "outdoor_seating": "outdoor-seating",
-        "wheelchair": "wheelchair-accessible",
-        "diet:vegetarian": "vegetarian",
-        "diet:vegan": "vegan",
-    }
-    for osm_field, tag_name in bool_tags.items():
-        if osm_tags.get(osm_field) in ("yes", "only"):
+    for field in VALUE_AS_TAG_FIELDS:
+        value = _normalize(osm_tags.get(field, ""))
+        if value:
+            tags.append(value)
+
+    for field, (tag_name, accepted) in BOOL_TAG_FIELDS.items():
+        if osm_tags.get(field) in accepted:
             tags.append(tag_name)
 
-    # Child-friendly
-    if osm_tags.get("kids_area") == "yes" or osm_tags.get("highchair") in ("yes", "available"):
-        tags.append("child-friendly")
-
-    # Lodging: star rating
     stars = osm_tags.get("stars", "")
     if stars in ("1", "2", "3", "4", "5"):
         tags.append(f"{stars}-star")
 
-    # Lodging: wifi
-    if osm_tags.get("internet_access") in ("wlan", "yes", "wifi"):
-        tags.append("wifi")
-
-    # Shopping: organic
-    if osm_tags.get("organic") in ("yes", "only"):
-        tags.append("organic")
-
-    # Healthcare: emergency
-    if osm_tags.get("emergency") == "yes":
-        tags.append("emergency")
-
-    # Fitness: sport type
-    sport = osm_tags.get("sport", "")
-    if sport:
-        for s in sport.split(";"):
-            s = s.strip().lower().replace("_", "-")
-            if s:
-                tags.append(s)
-
-    # Deduplicate preserving order
     seen = set()
     unique = []
     for t in tags:
@@ -222,6 +282,17 @@ def extract_tags(osm_tags, osm_key):
             unique.append(t)
 
     return unique
+
+
+def format_address(osm_tags):
+    """Build a single-line street address from addr:* tags, or return None."""
+    house = osm_tags.get("addr:housenumber", "").strip()
+    street = osm_tags.get("addr:street", "").strip()
+    if house and street:
+        return f"{house} {street}"
+    if street:
+        return street
+    return None
 
 
 def normalize_element(element, osm_key):
@@ -262,6 +333,9 @@ def normalize_element(element, osm_key):
         props["phone"] = tags["contact:phone"]
     if tags.get("opening_hours"):
         props["hours"] = tags["opening_hours"]
+    address = format_address(tags)
+    if address:
+        props["address"] = address
 
     return {
         "type": "Feature",

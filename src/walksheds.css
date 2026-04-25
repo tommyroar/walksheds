@@ -1102,6 +1102,16 @@ body,
   white-space: nowrap;
 }
 
+.poi-popup-address {
+  font-size: 11px;
+  color: #555;
+  margin-bottom: 4px;
+}
+
+.app.dark .poi-popup-address {
+  color: #aaa;
+}
+
 .poi-popup-link {
   display: inline-block;
   font-size: 11px;

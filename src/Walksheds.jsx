@@ -261,6 +261,7 @@ export default function Walksheds() {
       category: props.category,
       tags: typeof props.tags === 'string' ? JSON.parse(props.tags) : props.tags,
       website: props.website,
+      address: props.address,
     })
   }, [])
 
