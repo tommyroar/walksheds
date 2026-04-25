@@ -1,26 +1,22 @@
-name: Deploy branch preview to GitHub Pages
+name: Deploy preview — claude/move-data-to-repo-DMJZ6
 
-# Manually-triggered branch preview. Builds whichever ref you pick from the
-# "Run workflow" dropdown (or pass ref=… via API) and replaces whatever is
-# currently on Pages. The next push to main will overwrite it via deploy.yml,
-# which is the intended lifecycle — this is a quick dev preview, not a
-# long-lived staging environment.
+# Dedicated dev preview for this branch. Auto-deploys on every push to
+# the branch, plus a no-input workflow_dispatch for ad-hoc retriggers.
+# When this branch's PR is merged, .github/workflows/cleanup-merged-preview.yml
+# on main deletes this file from main.
 
 on:
+  push:
+    branches: ['claude/move-data-to-repo-DMJZ6']
   workflow_dispatch:
-    inputs:
-      ref:
-        description: 'Branch or commit SHA to deploy (defaults to the dispatched ref)'
-        required: false
-        type: string
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Same group as deploy.yml so a main push and a branch dispatch serialize
-# rather than racing — latest finished deploy wins.
+# Same group as deploy.yml so a main push and this preview serialize
+# rather than racing through the single Pages slot.
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -30,8 +26,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref || github.ref }}
 
       - uses: actions/setup-node@v4
         with:
