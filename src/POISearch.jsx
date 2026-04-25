@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 
-export default function POISearch({ availableTags, activeFilters, poiFeatures, expandedTag, onExpandTag, onAddFilter, onRemoveFilter, onClearFilters, onPoiSelect }) {
+export default function POISearch({ availableTags, activeFilters, poiFeatures, expandedTag, onExpandTag, onAddFilter, onRemoveFilter, onClearFilters, onPoiSelect, tagCategories, enabledCategories, onToggleCategory }) {
   const [query, setQuery] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
   const [highlightIdx, setHighlightIdx] = useState(0)
@@ -20,6 +20,21 @@ export default function POISearch({ availableTags, activeFilters, poiFeatures, e
     return { tagColors: colors, tagCounts: counts }
   }, [availableTags])
 
+  // Sub-categories (tags) only surface when their parent category is enabled.
+  const visibleTags = useMemo(() => {
+    if (!tagCategories || !enabledCategories || enabledCategories.size === 0) return []
+    const tagToCat = tagCategories.tag_to_category || {}
+    return availableTags.filter(({ tag }) => enabledCategories.has(tagToCat[tag]))
+  }, [availableTags, enabledCategories, tagCategories])
+
+  // Ordered category list for the pills row, sorted alphabetically by label.
+  const categoryEntries = useMemo(() => {
+    if (!tagCategories?.categories) return []
+    return Object.entries(tagCategories.categories)
+      .map(([id, c]) => ({ id, label: c.label, color: c.color }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+  }, [tagCategories])
+
   // Features matching the expanded tag
   const poisForTag = useMemo(() => {
     if (!expandedTag || !poiFeatures) return []
@@ -36,15 +51,16 @@ export default function POISearch({ availableTags, activeFilters, poiFeatures, e
     items[poiHighlightIdx]?.scrollIntoView({ block: 'nearest' })
   }, [poiHighlightIdx])
 
-  // Filter available tags by search query, excluding already-active filters
-  // When query is empty, show top tags so arrow-key browsing works on focus
+  // Filter available tags by search query, excluding already-active filters.
+  // Source list is restricted to tags whose category is currently enabled.
+  // When query is empty, show top tags so arrow-key browsing works on focus.
   const matches = useMemo(() => {
-    const filtered = availableTags.filter(({ tag }) => !activeFilters.has(tag))
+    const filtered = visibleTags.filter(({ tag }) => !activeFilters.has(tag))
     if (!query.trim()) return filtered.slice(0, 8)
     return filtered
       .filter(({ tag }) => tag.includes(query.trim().toLowerCase()))
       .slice(0, 8)
-  }, [query, availableTags, activeFilters])
+  }, [query, visibleTags, activeFilters])
 
   const handleSelect = useCallback((tag) => {
     onAddFilter(tag)
@@ -135,6 +151,28 @@ export default function POISearch({ availableTags, activeFilters, poiFeatures, e
 
   return (
     <div className="poi-search" ref={containerRef}>
+      {categoryEntries.length > 0 && (
+        <div className="poi-cat-pills">
+          {categoryEntries.map(({ id, label, color }) => {
+            const enabled = enabledCategories?.has(id)
+            return (
+              <button
+                key={id}
+                type="button"
+                className={`poi-cat-pill ${enabled ? 'enabled' : 'disabled'}`}
+                style={{
+                  borderColor: color,
+                  background: enabled ? color + '22' : 'transparent',
+                  color: enabled ? color : color + '99',
+                }}
+                onClick={() => onToggleCategory?.(id)}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </div>
+      )}
       <div className="poi-search-input-row">
         <svg className="poi-search-icon" width="14" height="14" viewBox="0 0 16 16" fill="none">
           <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.5"/>
