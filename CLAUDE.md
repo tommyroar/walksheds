@@ -16,9 +16,7 @@ npm run test          # Vitest unit tests (watch mode)
 npm run test -- --run # Vitest unit tests (single run)
 npm run e2e           # Playwright smoke tests
 npm run preview       # Preview production build
-python3 data/process.py          # Regenerate transit GeoJSON from SDOT raw data
-python3 data/pois/fetch_pois.py  # Rebuild POI GeoJSONs from committed OSM dump (no network)
-python3 data/pois/fetch_pois.py --refresh  # Refetch OSM dump from Overpass, then rebuild
+python3 data/process.py  # Regenerate GeoJSON from SDOT raw data
 ```
 
 ## Architecture
@@ -31,38 +29,10 @@ python3 data/pois/fetch_pois.py --refresh  # Refetch OSM dump from Overpass, the
 
 ## Data Pipeline
 
-### Transit (SDOT → public/)
 Raw SDOT data in `data/raw/` → `data/process.py` → processed GeoJSON in `public/`:
 - `line1-alignment.geojson` / `line2-alignment.geojson` — curved route lines (Chaikin-smoothed SDOT points)
 - `all-stations.geojson` — 38 stations with stop codes, line assignments, shared flag
 - Line 1 offset west, Line 2 offset east in the shared segment (Lynnwood → Intl District)
-
-`data/refresh.py` re-downloads the raw SDOT GeoJSON from Seattle ArcGIS (only needed when Sound Transit publishes updates), then runs `process.py`. Everything else reads from the committed raw files — no network required.
-
-### POIs (OSM → public/pois/)
-Two phases, with the raw Overpass dump committed to the repo:
-
-1. **Refresh** (needs network to `overpass-api.de`): `python3 data/pois/fetch_pois.py --refresh` runs one broad Overpass query covering every named node/way tagged with `amenity`/`tourism`/`leisure`/`shop` inside the station bbox, and writes `data/pois/raw/osm-seattle.json.gz` (~1.5 MB).
-2. **Build** (no network, default): `python3 data/pois/fetch_pois.py` reads the committed raw dump, applies `CATEGORIES` filters + `extract_tags`, and writes per-category GeoJSONs to `public/pois/`.
-
-Adding a new POI category:
-1. Edit `CATEGORIES` in `data/pois/fetch_pois.py`. The osm_key must be in `RAW_KEYS`.
-2. Run `python3 data/pois/fetch_pois.py` — rebuilds from the committed dump, no network.
-3. Wire into `src/constants.js`. Commit.
-
-Only add a new key to `RAW_KEYS` + run `--refresh` if a new category uses an OSM tag key not already covered by the dump.
-
-Tag extraction (`extract_tags` in `fetch_pois.py`) is config-driven:
-- `BOOL_TAG_FIELDS` — `{osm_field: (tag_name, accepted_values)}` for boolean qualifiers (e.g. `microbrewery=yes` → "microbrew"). Add a row to expose a new tag — no code changes needed.
-- `MULTI_VALUE_FIELDS` — semicolon-split fields where each value becomes its own tag (`cuisine`, `sport`).
-- `VALUE_AS_TAG_FIELDS` — fields where the value itself is the tag (`craft` → "brewery", "distillery").
-- `TAG_ALIASES` — `{raw: canonical}` synonym/typo collapse map applied after `_normalize` (lowercase + ASCII-fold + space/underscore-hyphenate). E.g. `kabob` → `kebab`, `boba` → `bubble-tea`. Pass `--no-normalize` to the build script to bypass.
-
-Tag categorization is config-driven via `EXPLICIT_TAG_CATEGORIES` (category id → `{label, color, tags[]}`). Anything not enumerated falls through to `cuisine` (the default bucket). The build emits `public/pois/tag-categories.json` with `categories` (id → label/color) and `tag_to_category` (tag → category id) — the frontend fetches this and uses it for chip coloring + the legend color key.
-
-Restaurants surface ~315 canonical tags (down from ~340 raw via alias compression); the frontend chip list (`getAvailableTags` in `src/poiUtils.js`) sorts by count desc, so common ones bubble up.
-
-Per-feature properties on output GeoJSON: `id` (OSM node/way id), `name`, `category`, `tags[]`, plus optional `address`, `website`, `phone`, `hours`.
 
 ## Deployment
 

@@ -81,9 +81,6 @@ export default function POILayer({ poiData, poiPopup, onPoiClose, onTagClick, da
                 })}
               </div>
             )}
-            {poiPopup.address && (
-              <div className="poi-popup-address">{poiPopup.address}</div>
-            )}
             {poiPopup.website && (
               <a
                 className="poi-popup-link"

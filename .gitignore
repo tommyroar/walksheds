@@ -159,6 +159,5 @@ data/processed/
 # Mapbox token file
 mapbox.token
 
-# Claude Code local settings (project-level settings.json is committed)
-.claude/*
-!.claude/settings.json
+# Claude Code local settings
+.claude/

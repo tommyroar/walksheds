@@ -11,27 +11,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from fetch_pois import (
     compute_bbox,
-    build_raw_query,
-    filter_elements,
+    build_overpass_query,
     extract_tags,
-    format_address,
     normalize_element,
-    build_category,
-    build_tag_categories_manifest,
-    build_tag_index,
-    categorize_tag,
-    collect_tag_provenance,
     validate_geojson,
     haversine_dist,
-    BOOL_TAG_FIELDS,
     CATEGORIES,
-    DEFAULT_TAG_CATEGORY,
-    EXPLICIT_TAG_CATEGORIES,
-    RAW_KEYS,
-    TAG_ALIASES,
     VALID_CATEGORIES,
-    _canonicalize,
-    _normalize,
 )
 
 
@@ -103,62 +89,25 @@ class TestComputeBbox:
         assert bbox[2] > max(s["lat"] for s in SAMPLE_STATIONS)
 
 
-# ── build_raw_query ──
+# ── build_overpass_query ──
 
 
-class TestBuildRawQuery:
-    BBOX = [47.3, -122.35, 47.7, -122.1]
-
+class TestBuildOverpassQuery:
     def test_query_contains_bbox(self):
-        query = build_raw_query(self.BBOX)
+        bbox = [47.3, -122.35, 47.7, -122.1]
+        query = build_overpass_query(bbox, "amenity", ["restaurant", "cafe"])
         assert "47.3,-122.35,47.7,-122.1" in query
 
-    def test_query_covers_all_raw_keys(self):
-        query = build_raw_query(self.BBOX)
-        for key in RAW_KEYS:
-            assert f'"{key}"' in query
-
-    def test_query_queries_nodes_and_ways(self):
-        query = build_raw_query(self.BBOX)
-        # One node clause and one way clause per key
-        assert query.count("node[") == len(RAW_KEYS)
-        assert query.count("way[") == len(RAW_KEYS)
+    def test_query_contains_tags(self):
+        bbox = [47.3, -122.35, 47.7, -122.1]
+        query = build_overpass_query(bbox, "amenity", ["restaurant", "cafe"])
+        assert '"amenity"' in query
+        assert "restaurant|cafe" in query
 
     def test_query_requires_name(self):
-        query = build_raw_query(self.BBOX)
+        bbox = [47.3, -122.35, 47.7, -122.1]
+        query = build_overpass_query(bbox, "amenity", ["restaurant"])
         assert '"name"~"."' in query
-
-    def test_custom_keys(self):
-        query = build_raw_query(self.BBOX, keys=("amenity",))
-        assert '"amenity"' in query
-        assert '"tourism"' not in query
-
-
-# ── filter_elements ──
-
-
-class TestFilterElements:
-    def test_matches_by_key_and_value(self):
-        elements = [
-            _make_node(1, "A", amenity="restaurant"),
-            _make_node(2, "B", amenity="bar"),
-            _make_node(3, "C", amenity="pharmacy"),
-        ]
-        matched = filter_elements(elements, "amenity", ["restaurant", "bar"])
-        ids = {el["id"] for el in matched}
-        assert ids == {1, 2}
-
-    def test_ignores_other_keys(self):
-        elements = [
-            _make_node(1, "A", amenity="restaurant"),
-            _make_way(2, "Park", leisure="park"),
-        ]
-        matched = filter_elements(elements, "leisure", ["park"])
-        assert [el["id"] for el in matched] == [2]
-
-    def test_empty_values_matches_nothing(self):
-        elements = [_make_node(1, "A", amenity="restaurant")]
-        assert filter_elements(elements, "amenity", []) == []
 
 
 # ── extract_tags ──
@@ -231,267 +180,6 @@ class TestExtractTags:
         assert "swimming" in tags
         assert "tennis" in tags
 
-    def test_microbrew(self):
-        tags = extract_tags({"amenity": "pub", "microbrewery": "yes"}, "amenity")
-        assert "microbrew" in tags
-
-    def test_craft_value_as_tag(self):
-        tags = extract_tags({"shop": "brewery", "craft": "brewery"}, "shop")
-        assert "brewery" in tags
-
-    def test_takeaway_only_accepted(self):
-        assert "takeaway" in extract_tags({"amenity": "restaurant", "takeaway": "yes"}, "amenity")
-        assert "takeaway" in extract_tags({"amenity": "restaurant", "takeaway": "only"}, "amenity")
-        assert "takeaway" not in extract_tags({"amenity": "restaurant", "takeaway": "no"}, "amenity")
-
-    def test_smoking_outside(self):
-        tags = extract_tags({"amenity": "bar", "smoking": "outside"}, "amenity")
-        assert "smoking" in tags
-
-    def test_smoking_no_excluded(self):
-        tags = extract_tags({"amenity": "bar", "smoking": "no"}, "amenity")
-        assert "smoking" not in tags
-
-    def test_drink_alias(self):
-        # drink:wine and drink:cocktail both map to canonical tags
-        tags = extract_tags(
-            {"amenity": "bar", "drink:wine": "yes", "drink:cocktail": "yes"},
-            "amenity",
-        )
-        assert "wine" in tags
-        assert "cocktails" in tags
-
-    def test_dog_friendly_variants(self):
-        for value in ("yes", "leashed", "outside"):
-            tags = extract_tags({"amenity": "cafe", "dog": value}, "amenity")
-            assert "dog-friendly" in tags
-
-    def test_meal_periods(self):
-        tags = extract_tags(
-            {"amenity": "cafe", "breakfast": "yes", "brunch": "yes", "lunch": "yes"},
-            "amenity",
-        )
-        assert "breakfast" in tags
-        assert "brunch" in tags
-        assert "lunch" in tags
-
-    def test_reservation_required(self):
-        for value in ("yes", "required", "recommended"):
-            tags = extract_tags({"amenity": "restaurant", "reservation": value}, "amenity")
-            assert "reservations" in tags
-        # "no" should not produce the tag
-        tags = extract_tags({"amenity": "restaurant", "reservation": "no"}, "amenity")
-        assert "reservations" not in tags
-
-    def test_has_bar_distinct_from_amenity_bar(self):
-        # An amenity=bar primary still emits "bar"; a restaurant with bar=yes
-        # emits "has-bar" so the two don't collide.
-        bar_amenity = extract_tags({"amenity": "bar"}, "amenity")
-        assert "bar" in bar_amenity
-        assert "has-bar" not in bar_amenity
-
-        restaurant_with_bar = extract_tags({"amenity": "restaurant", "bar": "yes"}, "amenity")
-        assert "has-bar" in restaurant_with_bar
-        assert "bar" not in restaurant_with_bar
-
-
-class TestBoolTagFieldsCoverage:
-    def test_every_field_emits_tag(self):
-        # Each BOOL_TAG_FIELDS entry should produce its tag for at least one accepted value.
-        for field, (tag_name, accepted) in BOOL_TAG_FIELDS.items():
-            value = next(iter(accepted))
-            tags = extract_tags({"amenity": "restaurant", field: value}, "amenity")
-            assert tag_name in tags, f"{field}={value!r} did not emit {tag_name!r}"
-
-
-class TestNormalize:
-    def test_lowercase(self):
-        assert _normalize("PIZZA") == "pizza"
-
-    def test_underscore_to_hyphen(self):
-        assert _normalize("ice_cream") == "ice-cream"
-
-    def test_space_to_hyphen(self):
-        assert _normalize("shaved ice") == "shaved-ice"
-
-    def test_diacritics_folded(self):
-        assert _normalize("açaí") == "acai"
-        assert _normalize("bánh mì") == "banh-mi"
-
-    def test_strips_whitespace(self):
-        assert _normalize("  pizza  ") == "pizza"
-
-    def test_empty(self):
-        assert _normalize("") == ""
-        assert _normalize(None) == ""
-
-
-class TestCanonicalize:
-    def test_alias_applied(self):
-        assert _canonicalize("noodle", TAG_ALIASES) == "noodles"
-        assert _canonicalize("kabob", TAG_ALIASES) == "kebab"
-
-    def test_unknown_passthrough(self):
-        assert _canonicalize("pizza", TAG_ALIASES) == "pizza"
-
-    def test_no_aliases_passthrough(self):
-        # When aliases is None, no resolution happens.
-        assert _canonicalize("noodle", None) == "noodle"
-
-
-class TestNormalizationInExtractTags:
-    def test_default_normalizes(self):
-        # amenity=ice_cream becomes "ice-cream" because primary is normalized
-        tags = extract_tags({"amenity": "ice_cream"}, "amenity")
-        assert "ice-cream" in tags
-        assert "ice_cream" not in tags
-
-    def test_no_normalize_preserves_underscore(self):
-        tags = extract_tags({"amenity": "ice_cream"}, "amenity", normalize=False)
-        assert "ice_cream" in tags
-        assert "ice-cream" not in tags
-
-    def test_alias_resolution(self):
-        # "kabob" → "kebab"
-        tags = extract_tags(
-            {"amenity": "restaurant", "cuisine": "kabob"},
-            "amenity",
-        )
-        assert "kebab" in tags
-        assert "kabob" not in tags
-
-    def test_alias_resolution_collapses_duplicates(self):
-        # "noodle" + "noodles" both → "noodles" → single tag
-        tags = extract_tags(
-            {"amenity": "restaurant", "cuisine": "noodle;noodles"},
-            "amenity",
-        )
-        assert tags.count("noodles") == 1
-
-    def test_diacritic_collapsing(self):
-        # "açaí" + "acai" both normalize to "acai"
-        tags = extract_tags(
-            {"amenity": "cafe", "cuisine": "açaí;acai"},
-            "amenity",
-        )
-        assert tags.count("acai") == 1
-
-    def test_no_normalize_skips_aliases(self):
-        # With normalize=False, alias map is not applied
-        tags = extract_tags(
-            {"amenity": "restaurant", "cuisine": "kabob"},
-            "amenity",
-            normalize=False,
-        )
-        assert "kabob" in tags
-        assert "kebab" not in tags
-
-
-class TestTagCategoryIndex:
-    def test_build_index_contains_explicit_tags(self):
-        # build_tag_index only contains tags from EXPLICIT_TAG_CATEGORIES,
-        # not the cuisine fallback default.
-        index = build_tag_index()
-        assert index["takeaway"] == "service"
-        assert "pizza" not in index  # falls through default at categorize_tag time
-
-    def test_categorize_explicit(self):
-        index = build_tag_index()
-        # "takeaway" lives in service
-        assert categorize_tag("takeaway", index) == "service"
-        # "vegetarian" in diet
-        assert categorize_tag("vegetarian", index) == "diet"
-        # "wifi" in vibe
-        assert categorize_tag("wifi", index) == "vibe"
-
-    def test_categorize_default_to_cuisine(self):
-        # Cuisine values that aren't explicitly listed default to cuisine
-        index = build_tag_index()
-        assert categorize_tag("pizza", index) == DEFAULT_TAG_CATEGORY
-        assert categorize_tag("italian", index) == DEFAULT_TAG_CATEGORY
-        assert categorize_tag("sushi", index) == DEFAULT_TAG_CATEGORY
-
-    def test_no_tag_in_two_buckets(self):
-        # build_tag_index raises if any tag is double-listed; this just exercises it.
-        build_tag_index()  # would have raised at import already if duplicate
-
-    def test_explicit_buckets_have_color_and_label(self):
-        for cat_id, cat in EXPLICIT_TAG_CATEGORIES.items():
-            assert cat.get("label"), f"{cat_id} missing label"
-            assert cat.get("color", "").startswith("#"), f"{cat_id} bad color"
-            assert cat.get("tags"), f"{cat_id} has no tags"
-
-
-class TestBuildTagCategoriesManifest:
-    def test_emits_used_categories(self):
-        index = build_tag_index()
-        # Tag set with one explicit (takeaway → service) and one default (pizza → cuisine)
-        manifest = build_tag_categories_manifest({"takeaway", "pizza"}, index)
-        assert "service" in manifest["categories"]
-        assert "cuisine" in manifest["categories"]
-        assert manifest["tag_to_category"] == {"pizza": "cuisine", "takeaway": "service"}
-
-    def test_unused_categories_omitted(self):
-        index = build_tag_index()
-        manifest = build_tag_categories_manifest({"pizza"}, index)
-        assert "service" not in manifest["categories"]
-        assert "cuisine" in manifest["categories"]
-
-    def test_manifest_categories_have_color(self):
-        index = build_tag_index()
-        manifest = build_tag_categories_manifest({"takeaway", "pizza", "wifi"}, index)
-        for cat_id, cat in manifest["categories"].items():
-            assert cat["color"].startswith("#")
-            assert cat["label"]
-
-
-class TestCollectTagProvenance:
-    def test_collapses_via_alias(self):
-        elements = [
-            {"type": "node", "id": 1, "lat": 47.59, "lon": -122.30,
-             "tags": {"name": "A", "amenity": "restaurant", "cuisine": "noodle"}},
-            {"type": "node", "id": 2, "lat": 47.59, "lon": -122.30,
-             "tags": {"name": "B", "amenity": "restaurant", "cuisine": "noodles"}},
-        ]
-        prov = collect_tag_provenance(elements, normalize=True)
-        # Both raw forms collapse to canonical "noodles"
-        assert prov["noodles"] == {"noodle", "noodles"}
-
-    def test_no_normalize_keeps_separate(self):
-        elements = [
-            {"type": "node", "id": 1, "lat": 47.59, "lon": -122.30,
-             "tags": {"name": "A", "amenity": "restaurant", "cuisine": "noodle"}},
-            {"type": "node", "id": 2, "lat": 47.59, "lon": -122.30,
-             "tags": {"name": "B", "amenity": "restaurant", "cuisine": "noodles"}},
-        ]
-        prov = collect_tag_provenance(elements, normalize=False)
-        assert "noodle" in prov
-        assert "noodles" in prov
-
-
-class TestFormatAddress:
-    def test_house_and_street(self):
-        assert format_address({
-            "addr:housenumber": "851",
-            "addr:street": "Rainier Avenue South",
-        }) == "851 Rainier Avenue South"
-
-    def test_street_only(self):
-        assert format_address({"addr:street": "Pike St"}) == "Pike St"
-
-    def test_house_only(self):
-        # House number alone is not useful — return None
-        assert format_address({"addr:housenumber": "851"}) is None
-
-    def test_missing(self):
-        assert format_address({}) is None
-
-    def test_strips_whitespace(self):
-        assert format_address({
-            "addr:housenumber": "  851  ",
-            "addr:street": "  Pike St  ",
-        }) == "851 Pike St"
-
 
 # ── normalize_element ──
 
@@ -540,19 +228,6 @@ class TestNormalizeElement:
     def test_way_without_center_returns_none(self):
         el = {"type": "way", "id": 1, "tags": {"name": "Test", "leisure": "park"}}
         assert normalize_element(el, "leisure") is None
-
-    def test_address_passthrough(self):
-        el = _make_node(1, "Test", "pub", {
-            "addr:housenumber": "851",
-            "addr:street": "Rainier Avenue South",
-        })
-        feat = normalize_element(el, "amenity")
-        assert feat["properties"]["address"] == "851 Rainier Avenue South"
-
-    def test_address_omitted_when_missing(self):
-        el = _make_node(1, "Test", "cafe")
-        feat = normalize_element(el, "amenity")
-        assert "address" not in feat["properties"]
 
 
 # ── validate_geojson ──
@@ -637,54 +312,3 @@ class TestCategories:
         assert "pharmacy" in VALID_CATEGORIES
         assert "library" in VALID_CATEGORIES
         assert "fitness_centre" in VALID_CATEGORIES
-
-    def test_all_category_keys_covered_by_raw_dump(self):
-        """Every CATEGORIES entry must use a tag key fetched by the raw dump.
-
-        If this fails, either add the key to RAW_KEYS (and re-run --refresh)
-        or move the category under an existing RAW_KEYS key.
-        """
-        for name, (osm_key, _values) in CATEGORIES.items():
-            assert osm_key in RAW_KEYS, (
-                f"Category '{name}' uses osm_key '{osm_key}' missing from RAW_KEYS {RAW_KEYS}"
-            )
-
-
-# ── build_category ──
-
-
-class TestBuildCategory:
-    def test_filters_and_normalizes(self):
-        elements = [
-            _make_node(1, "Pizza Place", amenity="restaurant", extra_tags={"cuisine": "pizza"}),
-            _make_node(2, "Some Bar", amenity="bar"),
-            _make_node(3, "A Pharmacy", amenity="pharmacy"),
-            _make_way(4, "Green Park", leisure="park"),
-        ]
-        fc = build_category(elements, "restaurants")
-        assert fc["type"] == "FeatureCollection"
-        names = {f["properties"]["name"] for f in fc["features"]}
-        assert names == {"Pizza Place", "Some Bar"}
-
-    def test_skips_unnamed(self):
-        elements = [
-            _make_node(1, "Real Place", amenity="restaurant"),
-            {"type": "node", "id": 2, "lat": 47.59, "lon": -122.30,
-             "tags": {"amenity": "restaurant"}},  # no name
-        ]
-        fc = build_category(elements, "restaurants")
-        assert len(fc["features"]) == 1
-
-    def test_deduplicates_ids(self):
-        elements = [
-            _make_node(1, "Place", amenity="restaurant"),
-            _make_node(1, "Place Duplicate", amenity="restaurant"),
-        ]
-        fc = build_category(elements, "restaurants")
-        assert len(fc["features"]) == 1
-
-    def test_rejects_category_with_unknown_key(self, monkeypatch):
-        import fetch_pois
-        monkeypatch.setitem(fetch_pois.CATEGORIES, "_bogus", ("highway", ["bus_stop"]))
-        with pytest.raises(ValueError, match="not in the raw dump"):
-            build_category([], "_bogus")

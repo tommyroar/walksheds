@@ -38,28 +38,35 @@ export function filterPOIsInWalkshed(poiFC, walkshedFC) {
 
 /**
  * Get all unique tags from POI features with their counts, sorted by count descending.
- * Each tag's color comes from the `tagColors` map (tag → hex), built from
- * `public/pois/tag-categories.json`. Tags without an entry get null color.
- *
+ * Includes the dominant category color for each tag based on which category uses it most.
  * @param {Array} features - GeoJSON features with properties.tags arrays
- * @param {Object} [tagColors] - map of tag → color hex
+ * @param {Object} [categoryColors] - map of category → color (from POI_CATEGORIES)
  * @returns {Array<{tag: string, count: number, color: string|null}>}
  */
-export function getAvailableTags(features, tagColors) {
+export function getAvailableTags(features, categoryColors) {
   const counts = {}
+  const catCounts = {} // tag → { category → count }
   for (const f of features) {
     const tags = f.properties?.tags
     if (!Array.isArray(tags)) continue
+    const cat = f.properties?.category
     for (const tag of tags) {
       counts[tag] = (counts[tag] || 0) + 1
+      if (cat && categoryColors) {
+        if (!catCounts[tag]) catCounts[tag] = {}
+        catCounts[tag][cat] = (catCounts[tag][cat] || 0) + 1
+      }
     }
   }
   return Object.entries(counts)
-    .map(([tag, count]) => ({
-      tag,
-      count,
-      color: tagColors?.[tag] || null,
-    }))
+    .map(([tag, count]) => {
+      let color = null
+      if (categoryColors && catCounts[tag]) {
+        const topCat = Object.entries(catCounts[tag]).sort((a, b) => b[1] - a[1])[0]?.[0]
+        if (topCat) color = categoryColors[topCat] || null
+      }
+      return { tag, count, color }
+    })
     .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
 }
 
