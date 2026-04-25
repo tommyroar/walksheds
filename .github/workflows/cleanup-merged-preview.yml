@@ -1,0 +1,45 @@
+name: Cleanup branch-preview workflow on merge
+
+# When a PR is merged into main, delete its dedicated
+# .github/workflows/deploy-preview-<sanitized-branch>.yml file (if any)
+# from main, so dev-preview workflows don't accumulate.
+#
+# Naming convention must match what dev-pages produced:
+#   sanitized = branch with '/' → '-', any other non [a-zA-Z0-9._-] stripped
+#   filename  = deploy-preview-<sanitized>.yml
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Delete per-branch deploy workflow if present
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          SAFE=$(printf '%s' "$BRANCH" | sed 's|/|-|g' | tr -cd 'a-zA-Z0-9._-')
+          FILE=".github/workflows/deploy-preview-${SAFE}.yml"
+          if [ ! -f "$FILE" ]; then
+            echo "No per-branch deploy workflow at $FILE — nothing to clean."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm "$FILE"
+          git commit -m "Remove deploy-preview workflow for merged ${BRANCH}"
+          # Defensive in case main moved during the run
+          git pull --rebase origin main || true
+          git push origin main
