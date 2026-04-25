@@ -1127,43 +1127,40 @@ body,
   color: #5bb8f0;
 }
 
-/* ── Legend: tag-category color key ── */
+/* ── POI category pills (sit above the search input) ── */
 
-.legend-tag-key {
+.poi-cat-pills {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 10px;
-  margin-top: 4px;
+  gap: 4px;
+  padding: 6px 8px 4px;
 }
 
-.legend-tag-key-item {
+.poi-cat-pill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid;
   font-size: 11px;
-  line-height: 1.4;
+  line-height: 1;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.1s, background 0.1s;
 }
 
-.legend-tag-key-swatch {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  flex-shrink: 0;
+.poi-cat-pill.disabled {
+  opacity: 0.55;
 }
 
-.legend-tag-key-label {
-  color: inherit;
+.poi-cat-pill.disabled:hover {
+  opacity: 0.85;
 }
 
-.legend-tag-key-count {
-  color: #888;
-  font-variant-numeric: tabular-nums;
-  font-size: 10px;
-}
-
-.app.dark .legend-tag-key-count {
-  color: #aaa;
+.poi-cat-pill.enabled {
+  font-weight: 500;
 }
 
 /* ── Legend: POI filter tags ── */

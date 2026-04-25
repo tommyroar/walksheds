@@ -82,6 +82,38 @@ export function filterByTags(features, activeTags) {
 }
 
 /**
+ * Additive filter: a POI is visible if any of its tags is in an enabled
+ * category OR any of its tags is in the active tag filters. With nothing
+ * enabled and no active filters, returns an empty array (additive default).
+ *
+ * @param {Array} features - GeoJSON features
+ * @param {Set<string>} enabledCategories - tag-category ids the user has activated
+ * @param {Set<string>} activeTags - explicit tag filters
+ * @param {Object} [tagToCategory] - map from tag name → category id
+ * @returns {Array} filtered features
+ */
+export function filterByCategoriesOrTags(features, enabledCategories, activeTags, tagToCategory) {
+  const hasCats = enabledCategories && enabledCategories.size > 0
+  const hasTags = activeTags && activeTags.size > 0
+  if (!hasCats && !hasTags) return []
+  return features.filter(f => {
+    const tags = f.properties?.tags
+    if (!Array.isArray(tags)) return false
+    if (hasCats && tagToCategory) {
+      for (const t of tags) {
+        if (enabledCategories.has(tagToCategory[t])) return true
+      }
+    }
+    if (hasTags) {
+      for (const t of tags) {
+        if (activeTags.has(t)) return true
+      }
+    }
+    return false
+  })
+}
+
+/**
  * Merge multiple FeatureCollections into one.
  * @param {...Object} fcs - GeoJSON FeatureCollections
  * @returns {Object} merged FeatureCollection
