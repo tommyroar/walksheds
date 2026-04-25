@@ -140,15 +140,28 @@ describe('getAvailableTags', () => {
     expect(tags).toEqual([{ tag: 'a', count: 1, color: null }])
   })
 
-  it('includes dominant category color when categoryColors provided', () => {
+  it('returns color from tagColors map when present', () => {
     const features = [
-      makeFeature(0, 0, { tags: ['pizza'], category: 'restaurant' }),
-      makeFeature(0, 0, { tags: ['pizza'], category: 'restaurant' }),
-      makeFeature(0, 0, { tags: ['pizza'], category: 'cafe' }),
+      makeFeature(0, 0, { tags: ['pizza'] }),
+      makeFeature(0, 0, { tags: ['pizza', 'wifi'] }),
     ]
-    const colors = { restaurant: '#E67E22', cafe: '#E67E22' }
-    const tags = getAvailableTags(features, colors)
-    expect(tags[0]).toEqual({ tag: 'pizza', count: 3, color: '#E67E22' })
+    const tagColors = { pizza: '#E67E22', wifi: '#34495E' }
+    const tags = getAvailableTags(features, tagColors)
+    const byTag = Object.fromEntries(tags.map(t => [t.tag, t]))
+    expect(byTag.pizza.color).toBe('#E67E22')
+    expect(byTag.wifi.color).toBe('#34495E')
+  })
+
+  it('returns null color when tag is not in tagColors', () => {
+    const features = [makeFeature(0, 0, { tags: ['pizza'] })]
+    const tags = getAvailableTags(features, { sushi: '#000' })
+    expect(tags[0].color).toBeNull()
+  })
+
+  it('handles missing tagColors gracefully', () => {
+    const features = [makeFeature(0, 0, { tags: ['pizza'] })]
+    const tags = getAvailableTags(features)
+    expect(tags[0].color).toBeNull()
   })
 })
 
