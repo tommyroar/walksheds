@@ -17,12 +17,21 @@ from fetch_pois import (
     format_address,
     normalize_element,
     build_category,
+    build_tag_categories_manifest,
+    build_tag_index,
+    categorize_tag,
+    collect_tag_provenance,
     validate_geojson,
     haversine_dist,
     BOOL_TAG_FIELDS,
     CATEGORIES,
+    DEFAULT_TAG_CATEGORY,
+    EXPLICIT_TAG_CATEGORIES,
     RAW_KEYS,
+    TAG_ALIASES,
     VALID_CATEGORIES,
+    _canonicalize,
+    _normalize,
 )
 
 
@@ -293,6 +302,171 @@ class TestBoolTagFieldsCoverage:
             value = next(iter(accepted))
             tags = extract_tags({"amenity": "restaurant", field: value}, "amenity")
             assert tag_name in tags, f"{field}={value!r} did not emit {tag_name!r}"
+
+
+class TestNormalize:
+    def test_lowercase(self):
+        assert _normalize("PIZZA") == "pizza"
+
+    def test_underscore_to_hyphen(self):
+        assert _normalize("ice_cream") == "ice-cream"
+
+    def test_space_to_hyphen(self):
+        assert _normalize("shaved ice") == "shaved-ice"
+
+    def test_diacritics_folded(self):
+        assert _normalize("açaí") == "acai"
+        assert _normalize("bánh mì") == "banh-mi"
+
+    def test_strips_whitespace(self):
+        assert _normalize("  pizza  ") == "pizza"
+
+    def test_empty(self):
+        assert _normalize("") == ""
+        assert _normalize(None) == ""
+
+
+class TestCanonicalize:
+    def test_alias_applied(self):
+        assert _canonicalize("noodle", TAG_ALIASES) == "noodles"
+        assert _canonicalize("kabob", TAG_ALIASES) == "kebab"
+
+    def test_unknown_passthrough(self):
+        assert _canonicalize("pizza", TAG_ALIASES) == "pizza"
+
+    def test_no_aliases_passthrough(self):
+        # When aliases is None, no resolution happens.
+        assert _canonicalize("noodle", None) == "noodle"
+
+
+class TestNormalizationInExtractTags:
+    def test_default_normalizes(self):
+        # amenity=ice_cream becomes "ice-cream" because primary is normalized
+        tags = extract_tags({"amenity": "ice_cream"}, "amenity")
+        assert "ice-cream" in tags
+        assert "ice_cream" not in tags
+
+    def test_no_normalize_preserves_underscore(self):
+        tags = extract_tags({"amenity": "ice_cream"}, "amenity", normalize=False)
+        assert "ice_cream" in tags
+        assert "ice-cream" not in tags
+
+    def test_alias_resolution(self):
+        # "kabob" → "kebab"
+        tags = extract_tags(
+            {"amenity": "restaurant", "cuisine": "kabob"},
+            "amenity",
+        )
+        assert "kebab" in tags
+        assert "kabob" not in tags
+
+    def test_alias_resolution_collapses_duplicates(self):
+        # "noodle" + "noodles" both → "noodles" → single tag
+        tags = extract_tags(
+            {"amenity": "restaurant", "cuisine": "noodle;noodles"},
+            "amenity",
+        )
+        assert tags.count("noodles") == 1
+
+    def test_diacritic_collapsing(self):
+        # "açaí" + "acai" both normalize to "acai"
+        tags = extract_tags(
+            {"amenity": "cafe", "cuisine": "açaí;acai"},
+            "amenity",
+        )
+        assert tags.count("acai") == 1
+
+    def test_no_normalize_skips_aliases(self):
+        # With normalize=False, alias map is not applied
+        tags = extract_tags(
+            {"amenity": "restaurant", "cuisine": "kabob"},
+            "amenity",
+            normalize=False,
+        )
+        assert "kabob" in tags
+        assert "kebab" not in tags
+
+
+class TestTagCategoryIndex:
+    def test_build_index_contains_explicit_tags(self):
+        # build_tag_index only contains tags from EXPLICIT_TAG_CATEGORIES,
+        # not the cuisine fallback default.
+        index = build_tag_index()
+        assert index["takeaway"] == "service"
+        assert "pizza" not in index  # falls through default at categorize_tag time
+
+    def test_categorize_explicit(self):
+        index = build_tag_index()
+        # "takeaway" lives in service
+        assert categorize_tag("takeaway", index) == "service"
+        # "vegetarian" in diet
+        assert categorize_tag("vegetarian", index) == "diet"
+        # "wifi" in vibe
+        assert categorize_tag("wifi", index) == "vibe"
+
+    def test_categorize_default_to_cuisine(self):
+        # Cuisine values that aren't explicitly listed default to cuisine
+        index = build_tag_index()
+        assert categorize_tag("pizza", index) == DEFAULT_TAG_CATEGORY
+        assert categorize_tag("italian", index) == DEFAULT_TAG_CATEGORY
+        assert categorize_tag("sushi", index) == DEFAULT_TAG_CATEGORY
+
+    def test_no_tag_in_two_buckets(self):
+        # build_tag_index raises if any tag is double-listed; this just exercises it.
+        build_tag_index()  # would have raised at import already if duplicate
+
+    def test_explicit_buckets_have_color_and_label(self):
+        for cat_id, cat in EXPLICIT_TAG_CATEGORIES.items():
+            assert cat.get("label"), f"{cat_id} missing label"
+            assert cat.get("color", "").startswith("#"), f"{cat_id} bad color"
+            assert cat.get("tags"), f"{cat_id} has no tags"
+
+
+class TestBuildTagCategoriesManifest:
+    def test_emits_used_categories(self):
+        index = build_tag_index()
+        # Tag set with one explicit (takeaway → service) and one default (pizza → cuisine)
+        manifest = build_tag_categories_manifest({"takeaway", "pizza"}, index)
+        assert "service" in manifest["categories"]
+        assert "cuisine" in manifest["categories"]
+        assert manifest["tag_to_category"] == {"pizza": "cuisine", "takeaway": "service"}
+
+    def test_unused_categories_omitted(self):
+        index = build_tag_index()
+        manifest = build_tag_categories_manifest({"pizza"}, index)
+        assert "service" not in manifest["categories"]
+        assert "cuisine" in manifest["categories"]
+
+    def test_manifest_categories_have_color(self):
+        index = build_tag_index()
+        manifest = build_tag_categories_manifest({"takeaway", "pizza", "wifi"}, index)
+        for cat_id, cat in manifest["categories"].items():
+            assert cat["color"].startswith("#")
+            assert cat["label"]
+
+
+class TestCollectTagProvenance:
+    def test_collapses_via_alias(self):
+        elements = [
+            {"type": "node", "id": 1, "lat": 47.59, "lon": -122.30,
+             "tags": {"name": "A", "amenity": "restaurant", "cuisine": "noodle"}},
+            {"type": "node", "id": 2, "lat": 47.59, "lon": -122.30,
+             "tags": {"name": "B", "amenity": "restaurant", "cuisine": "noodles"}},
+        ]
+        prov = collect_tag_provenance(elements, normalize=True)
+        # Both raw forms collapse to canonical "noodles"
+        assert prov["noodles"] == {"noodle", "noodles"}
+
+    def test_no_normalize_keeps_separate(self):
+        elements = [
+            {"type": "node", "id": 1, "lat": 47.59, "lon": -122.30,
+             "tags": {"name": "A", "amenity": "restaurant", "cuisine": "noodle"}},
+            {"type": "node", "id": 2, "lat": 47.59, "lon": -122.30,
+             "tags": {"name": "B", "amenity": "restaurant", "cuisine": "noodles"}},
+        ]
+        prov = collect_tag_provenance(elements, normalize=False)
+        assert "noodle" in prov
+        assert "noodles" in prov
 
 
 class TestFormatAddress:

@@ -20,6 +20,7 @@ export default function LineLegend({
   position,
   poiFilters,
   poiTagColors,
+  tagCategories,
   onRemovePoiFilter,
   onClearPoiFilters,
   onTagSelect,
@@ -32,6 +33,24 @@ export default function LineLegend({
       if (color) tagColorMap[tag] = color
       tagCountMap[tag] = count
     }
+  }
+
+  // Color key: which tag-categories are present in the current view, with their tag counts.
+  let visibleCategories = []
+  if (tagCategories?.tag_to_category && poiTagColors?.length) {
+    const counts = {}
+    for (const { tag, count } of poiTagColors) {
+      const catId = tagCategories.tag_to_category[tag]
+      if (catId) counts[catId] = (counts[catId] || 0) + count
+    }
+    visibleCategories = Object.entries(counts)
+      .map(([catId, total]) => ({
+        id: catId,
+        label: tagCategories.categories[catId]?.label || catId,
+        color: tagCategories.categories[catId]?.color || '#999',
+        count: total,
+      }))
+      .sort((a, b) => b.count - a.count)
   }
 
   const posClass = position === 'bottom-right' ? 'bottom-right' : ''
@@ -196,6 +215,22 @@ export default function LineLegend({
           )
         })}
       </div>
+
+      {visibleCategories.length > 0 && (
+        <>
+          <div className="legend-divider" />
+          <h3 className="legend-title">Tag colors</h3>
+          <div className="legend-tag-key">
+            {visibleCategories.map(c => (
+              <div key={c.id} className="legend-tag-key-item">
+                <span className="legend-tag-key-swatch" style={{ background: c.color }} />
+                <span className="legend-tag-key-label">{c.label}</span>
+                <span className="legend-tag-key-count">{c.count}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       {poiFilters && poiFilters.size > 0 && (
         <>

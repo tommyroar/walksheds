@@ -1127,6 +1127,45 @@ body,
   color: #5bb8f0;
 }
 
+/* ── Legend: tag-category color key ── */
+
+.legend-tag-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 4px;
+}
+
+.legend-tag-key-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.legend-tag-key-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legend-tag-key-label {
+  color: inherit;
+}
+
+.legend-tag-key-count {
+  color: #888;
+  font-variant-numeric: tabular-nums;
+  font-size: 10px;
+}
+
+.app.dark .legend-tag-key-count {
+  color: #aaa;
+}
+
 /* ── Legend: POI filter tags ── */
 
 .legend-poi-filters {

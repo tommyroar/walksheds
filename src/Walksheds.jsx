@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { buildGraph, isJunction, getJunctionHints } from './routeGraph'
 import { fetchWalkshed, getLargestEnabledBounds } from './mapbox'
-import { WALKSHED_OPTIONS, LINE_COLORS, WALKSHED_ACCENT_LIGHT, WALKSHED_ACCENT_DARK, SEATTLE_CENTER, SEATTLE_ZOOM, POI_FILES, POI_CATEGORIES } from './constants'
+import { WALKSHED_OPTIONS, LINE_COLORS, WALKSHED_ACCENT_LIGHT, WALKSHED_ACCENT_DARK, SEATTLE_CENTER, SEATTLE_ZOOM, POI_FILES } from './constants'
 import { parseStationPath, buildStationPath, findStationByCode, parseWalkshedParams, buildWalkshedParams } from './deepLink'
 import { filterPOIsInWalkshed, filterByTags, getAvailableTags, mergeFeatureCollections } from './poiUtils'
 import { useNavigation } from './useNavigation'
@@ -101,6 +101,7 @@ export default function Walksheds() {
   const [legendPosition, setLegendPosition] = useState('bottom-left')
   const [introVisible, setIntroVisible] = useState(() => shouldShowIntro())
   const [poiData, setPoiData] = useState({})
+  const [tagCategories, setTagCategories] = useState(null)
   const [poiFilters, setPoiFilters] = useState(new Set())
   const [poiPopup, setPoiPopup] = useState(null)
   const [expandedPoiTag, setExpandedPoiTag] = useState(null)
@@ -122,6 +123,9 @@ export default function Walksheds() {
         .then(r => r.ok ? r.json() : null)
         .then(d => { if (d) setPoiData(prev => ({ ...prev, [cat]: d })) })
     }
+    fetch(`${base}pois/tag-categories.json`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) setTagCategories(d) })
   }, [])
 
   useEffect(() => {
@@ -213,11 +217,20 @@ export default function Walksheds() {
     return mergeFeatureCollections(...clipped)
   }, [walksheds, enabledWalksheds, poiData])
 
-  const categoryColors = useMemo(() => Object.fromEntries(
-    Object.entries(POI_CATEGORIES).map(([k, v]) => [k, v.color])
-  ), [])
+  const tagColors = useMemo(() => {
+    if (!tagCategories) return {}
+    const out = {}
+    for (const [tag, catId] of Object.entries(tagCategories.tag_to_category)) {
+      const color = tagCategories.categories[catId]?.color
+      if (color) out[tag] = color
+    }
+    return out
+  }, [tagCategories])
 
-  const availableTags = useMemo(() => getAvailableTags(walkshedPois.features, categoryColors), [walkshedPois, categoryColors])
+  const availableTags = useMemo(
+    () => getAvailableTags(walkshedPois.features, tagColors),
+    [walkshedPois, tagColors],
+  )
 
   const visiblePois = useMemo(() => {
     if (poiFilters.size === 0) return walkshedPois
@@ -393,6 +406,7 @@ export default function Walksheds() {
         position={legendPosition}
         poiFilters={poiFilters}
         poiTagColors={availableTags}
+        tagCategories={tagCategories}
         onRemovePoiFilter={handleRemovePoiFilter}
         onClearPoiFilters={handleClearPoiFilters}
         onTagSelect={setExpandedPoiTag}

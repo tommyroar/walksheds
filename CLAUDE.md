@@ -56,7 +56,11 @@ Tag extraction (`extract_tags` in `fetch_pois.py`) is config-driven:
 - `BOOL_TAG_FIELDS` — `{osm_field: (tag_name, accepted_values)}` for boolean qualifiers (e.g. `microbrewery=yes` → "microbrew"). Add a row to expose a new tag — no code changes needed.
 - `MULTI_VALUE_FIELDS` — semicolon-split fields where each value becomes its own tag (`cuisine`, `sport`).
 - `VALUE_AS_TAG_FIELDS` — fields where the value itself is the tag (`craft` → "brewery", "distillery").
-Restaurants currently surface ~260 unique tag values; the frontend chip list (`getAvailableTags` in `src/poiUtils.js`) sorts by count desc, so common ones bubble up.
+- `TAG_ALIASES` — `{raw: canonical}` synonym/typo collapse map applied after `_normalize` (lowercase + ASCII-fold + space/underscore-hyphenate). E.g. `kabob` → `kebab`, `boba` → `bubble-tea`. Pass `--no-normalize` to the build script to bypass.
+
+Tag categorization is config-driven via `EXPLICIT_TAG_CATEGORIES` (category id → `{label, color, tags[]}`). Anything not enumerated falls through to `cuisine` (the default bucket). The build emits `public/pois/tag-categories.json` with `categories` (id → label/color) and `tag_to_category` (tag → category id) — the frontend fetches this and uses it for chip coloring + the legend color key.
+
+Restaurants surface ~315 canonical tags (down from ~340 raw via alias compression); the frontend chip list (`getAvailableTags` in `src/poiUtils.js`) sorts by count desc, so common ones bubble up.
 
 Per-feature properties on output GeoJSON: `id` (OSM node/way id), `name`, `category`, `tags[]`, plus optional `address`, `website`, `phone`, `hours`.
 
