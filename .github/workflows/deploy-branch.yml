@@ -1,0 +1,59 @@
+name: Deploy branch preview to GitHub Pages
+
+# Manually-triggered branch preview. Builds whichever ref you pick from the
+# "Run workflow" dropdown (or pass ref=… via API) and replaces whatever is
+# currently on Pages. The next push to main will overwrite it via deploy.yml,
+# which is the intended lifecycle — this is a quick dev preview, not a
+# long-lived staging environment.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch or commit SHA to deploy (defaults to the dispatched ref)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Same group as deploy.yml so a main push and a branch dispatch serialize
+# rather than racing — latest finished deploy wins.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm install
+
+      - run: npm run build
+        env:
+          VITE_MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_ACCESS_TOKEN }}
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
