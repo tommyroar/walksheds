@@ -190,7 +190,7 @@ export default function POISearch({
                 className={`poi-cat-pill ${enabled ? 'enabled' : 'disabled'}`}
                 style={{
                   borderColor: color,
-                  background: enabled ? color + '22' : 'transparent',
+                  background: enabled ? color + '40' : 'transparent',
                   color: enabled ? color : color + '99',
                 }}
                 onClick={() => onToggleCategory?.(id)}
@@ -202,8 +202,8 @@ export default function POISearch({
 
           {activeTagList.map(tag => {
             const color = tagColors[tag] || '#666'
-            const count = tagCounts[tag]
-            const present = count != null && count > 0
+            const count = tagCounts[tag] ?? 0
+            const present = count > 0
             const stateClass = present ? 'enabled' : 'disabled'
             return (
               <span
@@ -211,7 +211,7 @@ export default function POISearch({
                 className={`poi-cat-pill poi-cat-pill-tag ${stateClass}`}
                 style={{
                   borderColor: color,
-                  background: present ? color + '22' : 'transparent',
+                  background: present ? color + '40' : 'transparent',
                   color: present ? color : color + '99',
                 }}
               >
@@ -221,14 +221,12 @@ export default function POISearch({
                 >
                   {tag}
                 </span>
-                {count != null && (
-                  <span
-                    className="poi-cat-pill-count"
-                    onClick={(e) => handleTagTextClick(tag, e)}
-                  >
-                    {count}
-                  </span>
-                )}
+                <span
+                  className="poi-cat-pill-count"
+                  onClick={(e) => handleTagTextClick(tag, e)}
+                >
+                  {count}
+                </span>
                 <span
                   className="poi-cat-pill-remove"
                   onClick={(e) => handleRemoveTag(tag, e)}
