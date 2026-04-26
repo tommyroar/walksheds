@@ -4,7 +4,7 @@ import {
   filterPOIsInWalkshed,
   getAvailableTags,
   filterByTags,
-  filterByCategoriesOrTags,
+  filterByMainCategoriesAndTags,
   mergeFeatureCollections,
 } from '../poiUtils'
 
@@ -203,67 +203,81 @@ describe('filterByTags', () => {
   })
 })
 
-describe('filterByCategoriesOrTags', () => {
+describe('filterByMainCategoriesAndTags', () => {
   const features = [
-    makeFeature(0, 0, { tags: ['pizza', 'italian'] }),       // cuisine
-    makeFeature(0, 0, { tags: ['sushi', 'japanese'] }),      // cuisine
-    makeFeature(0, 0, { tags: ['takeaway', 'wifi'] }),       // service + vibe
-    makeFeature(0, 0, { tags: ['vegetarian'] }),             // diet
-    makeFeature(0, 0, { tags: [] }),                         // none
+    makeFeature(0, 0, { category: 'restaurant', tags: ['pizza', 'italian'] }),
+    makeFeature(0, 0, { category: 'fast_food', tags: ['burger'] }),
+    makeFeature(0, 0, { category: 'cafe',       tags: ['wifi'] }),
+    makeFeature(0, 0, { category: 'bar',        tags: ['outdoor-seating'] }),
+    makeFeature(0, 0, { category: 'restaurant', tags: ['brewery'] }),
+    makeFeature(0, 0, { category: 'park',       tags: [] }),
+    makeFeature(0, 0, { category: 'museum',     tags: ['art'] }),
   ]
-  const tagToCategory = {
-    pizza: 'cuisine', italian: 'cuisine', sushi: 'cuisine', japanese: 'cuisine',
-    takeaway: 'service', wifi: 'vibe', vegetarian: 'diet',
+  const mainCategoriesById = {
+    restaurants: { matchCategories: ['restaurant', 'fast_food', 'ice_cream', 'bakery'], matchTags: [] },
+    bars:        { matchCategories: ['bar', 'pub'], matchTags: ['brewery', 'winery', 'distillery', 'has-bar'] },
+    coffee:      { matchCategories: ['cafe'], matchTags: ['coffee', 'coffee-shop', 'coffee-roaster'] },
+    parks:       { matchCategories: ['park', 'playground', 'garden'], matchTags: [] },
   }
 
   it('returns empty array when nothing is enabled or active', () => {
-    expect(filterByCategoriesOrTags(features, new Set(), new Set(), tagToCategory)).toEqual([])
-    expect(filterByCategoriesOrTags(features, null, null, tagToCategory)).toEqual([])
+    expect(filterByMainCategoriesAndTags(features, new Set(), new Set(), mainCategoriesById)).toEqual([])
+    expect(filterByMainCategoriesAndTags(features, null, null, mainCategoriesById)).toEqual([])
   })
 
-  it('matches features whose tag belongs to an enabled category', () => {
-    const result = filterByCategoriesOrTags(
-      features, new Set(['cuisine']), new Set(), tagToCategory,
+  it('matches features whose category is in an enabled main pill', () => {
+    const result = filterByMainCategoriesAndTags(
+      features, new Set(['restaurants']), new Set(), mainCategoriesById,
     )
-    expect(result).toHaveLength(2) // pizza + sushi POIs
+    // restaurant pizza + fast_food burger + restaurant brewery
+    expect(result).toHaveLength(3)
   })
 
-  it('matches features by active tag filter alone', () => {
-    const result = filterByCategoriesOrTags(
-      features, new Set(), new Set(['wifi']), tagToCategory,
+  it('matches features by main pill tag list (e.g. brewery → bars)', () => {
+    const result = filterByMainCategoriesAndTags(
+      features, new Set(['bars']), new Set(), mainCategoriesById,
     )
-    expect(result).toHaveLength(1) // takeaway+wifi POI
-  })
-
-  it('unions categories and active tags (additive)', () => {
-    // diet category enabled + sushi tag filter → vegetarian POI + sushi POI
-    const result = filterByCategoriesOrTags(
-      features, new Set(['diet']), new Set(['sushi']), tagToCategory,
-    )
+    // bar outdoor-seating + restaurant brewery (matched by tag)
     expect(result).toHaveLength(2)
   })
 
-  it('multiple enabled categories OR together', () => {
-    const result = filterByCategoriesOrTags(
-      features, new Set(['service', 'diet']), new Set(), tagToCategory,
+  it('matches by active tag filter alone', () => {
+    const result = filterByMainCategoriesAndTags(
+      features, new Set(), new Set(['wifi']), mainCategoriesById,
     )
-    expect(result).toHaveLength(2) // takeaway POI + vegetarian POI
+    expect(result).toHaveLength(1) // cafe wifi
   })
 
-  it('skips features with no tags array', () => {
-    const mixed = [...features, { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [0, 0] } }]
-    const result = filterByCategoriesOrTags(
-      mixed, new Set(['cuisine']), new Set(), tagToCategory,
+  it('unions main categories and active tags (additive)', () => {
+    const result = filterByMainCategoriesAndTags(
+      features, new Set(['parks']), new Set(['art']), mainCategoriesById,
     )
-    expect(result).toHaveLength(2) // unchanged
+    // park (no tags) + museum art tag
+    expect(result).toHaveLength(2)
   })
 
-  it('ignores tags whose category is not enabled', () => {
-    // wifi belongs to vibe; only enable cuisine → wifi POI excluded
-    const result = filterByCategoriesOrTags(
-      features, new Set(['cuisine']), new Set(), tagToCategory,
+  it('multiple enabled main categories OR together', () => {
+    const result = filterByMainCategoriesAndTags(
+      features, new Set(['coffee', 'parks']), new Set(), mainCategoriesById,
     )
-    expect(result.every(f => f.properties.tags.some(t => tagToCategory[t] === 'cuisine'))).toBe(true)
+    // cafe wifi + park
+    expect(result).toHaveLength(2)
+  })
+
+  it('handles features with no tags array', () => {
+    const mixed = [...features, { type: 'Feature', properties: { category: 'restaurant' }, geometry: { type: 'Point', coordinates: [0, 0] } }]
+    const result = filterByMainCategoriesAndTags(
+      mixed, new Set(['restaurants']), new Set(), mainCategoriesById,
+    )
+    expect(result).toHaveLength(4)
+  })
+
+  it('ignores categories not enabled', () => {
+    // only restaurants → museum, park, cafe, bar excluded
+    const result = filterByMainCategoriesAndTags(
+      features, new Set(['restaurants']), new Set(), mainCategoriesById,
+    )
+    expect(result.every(f => ['restaurant', 'fast_food'].includes(f.properties.category))).toBe(true)
   })
 })
 
