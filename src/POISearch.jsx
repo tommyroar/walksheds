@@ -1,6 +1,19 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 
-export default function POISearch({ availableTags, activeFilters, poiFeatures, expandedTag, onExpandTag, onAddFilter, onRemoveFilter, onClearFilters, onPoiSelect, tagCategories, enabledCategories, onToggleCategory }) {
+export default function POISearch({
+  availableTags,
+  activeFilters,
+  poiFeatures,
+  expandedTag,
+  onExpandTag,
+  onAddFilter,
+  onRemoveFilter,
+  onClearFilters,
+  onPoiSelect,
+  mainCategories,
+  enabledCategories,
+  onToggleCategory,
+}) {
   const [query, setQuery] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
   const [highlightIdx, setHighlightIdx] = useState(0)
@@ -9,7 +22,6 @@ export default function POISearch({ availableTags, activeFilters, poiFeatures, e
   const containerRef = useRef(null)
   const poiListRef = useRef(null)
 
-  // Build tag → color and tag → count lookups from availableTags
   const { tagColors, tagCounts } = useMemo(() => {
     const colors = {}
     const counts = {}
@@ -20,22 +32,6 @@ export default function POISearch({ availableTags, activeFilters, poiFeatures, e
     return { tagColors: colors, tagCounts: counts }
   }, [availableTags])
 
-  // Sub-categories (tags) only surface when their parent category is enabled.
-  const visibleTags = useMemo(() => {
-    if (!tagCategories || !enabledCategories || enabledCategories.size === 0) return []
-    const tagToCat = tagCategories.tag_to_category || {}
-    return availableTags.filter(({ tag }) => enabledCategories.has(tagToCat[tag]))
-  }, [availableTags, enabledCategories, tagCategories])
-
-  // Ordered category list for the pills row, sorted alphabetically by label.
-  const categoryEntries = useMemo(() => {
-    if (!tagCategories?.categories) return []
-    return Object.entries(tagCategories.categories)
-      .map(([id, c]) => ({ id, label: c.label, color: c.color }))
-      .sort((a, b) => a.label.localeCompare(b.label))
-  }, [tagCategories])
-
-  // Features matching the expanded tag
   const poisForTag = useMemo(() => {
     if (!expandedTag || !poiFeatures) return []
     return poiFeatures.filter(f => {
@@ -44,23 +40,19 @@ export default function POISearch({ availableTags, activeFilters, poiFeatures, e
     }).sort((a, b) => (a.properties.name || '').localeCompare(b.properties.name || ''))
   }, [expandedTag, poiFeatures])
 
-  // Scroll highlighted POI into view
   useEffect(() => {
     if (!poiListRef.current) return
     const items = poiListRef.current.querySelectorAll('[data-poi-item]')
     items[poiHighlightIdx]?.scrollIntoView({ block: 'nearest' })
   }, [poiHighlightIdx])
 
-  // Filter available tags by search query, excluding already-active filters.
-  // Source list is restricted to tags whose category is currently enabled.
-  // When query is empty, show top tags so arrow-key browsing works on focus.
   const matches = useMemo(() => {
-    const filtered = visibleTags.filter(({ tag }) => !activeFilters.has(tag))
+    const filtered = availableTags.filter(({ tag }) => !activeFilters.has(tag))
     if (!query.trim()) return filtered.slice(0, 8)
     return filtered
       .filter(({ tag }) => tag.includes(query.trim().toLowerCase()))
       .slice(0, 8)
-  }, [query, visibleTags, activeFilters])
+  }, [query, availableTags, activeFilters])
 
   const handleSelect = useCallback((tag) => {
     onAddFilter(tag)
@@ -137,7 +129,6 @@ export default function POISearch({ availableTags, activeFilters, poiFeatures, e
     }
   }, [poisForTag, poiHighlightIdx, onPoiSelect, onExpandTag])
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handleClick = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
@@ -149,30 +140,11 @@ export default function POISearch({ availableTags, activeFilters, poiFeatures, e
     return () => document.removeEventListener('mousedown', handleClick)
   }, [onExpandTag])
 
+  const activeTagList = [...activeFilters]
+  const hasAnyPills = (mainCategories?.length ?? 0) > 0 || activeTagList.length > 0
+
   return (
     <div className="poi-search" ref={containerRef}>
-      {categoryEntries.length > 0 && (
-        <div className="poi-cat-pills">
-          {categoryEntries.map(({ id, label, color }) => {
-            const enabled = enabledCategories?.has(id)
-            return (
-              <button
-                key={id}
-                type="button"
-                className={`poi-cat-pill ${enabled ? 'enabled' : 'disabled'}`}
-                style={{
-                  borderColor: color,
-                  background: enabled ? color + '22' : 'transparent',
-                  color: enabled ? color : color + '99',
-                }}
-                onClick={() => onToggleCategory?.(id)}
-              >
-                {label}
-              </button>
-            )
-          })}
-        </div>
-      )}
       <div className="poi-search-input-row">
         <svg className="poi-search-icon" width="14" height="14" viewBox="0 0 16 16" fill="none">
           <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.5"/>
@@ -207,23 +179,70 @@ export default function POISearch({ availableTags, activeFilters, poiFeatures, e
         </div>
       )}
 
-      {activeFilters.size > 0 && (
-        <div className="poi-chips">
-          {[...activeFilters].map(tag => (
-            <div key={tag} className="poi-chip"
-              style={tagColors[tag] ? { borderColor: tagColors[tag] + '40', color: tagColors[tag] } : undefined}
-            >
-              <span className="poi-chip-text" onClick={(e) => handleTagTextClick(tag, e)}>{tag}</span>
-              {tagCounts[tag] != null && <span className="poi-chip-count" onClick={(e) => handleTagTextClick(tag, e)}>{tagCounts[tag]}</span>}
-              <span className="legend-filter-remove" onClick={(e) => handleRemoveTag(tag, e)}>
-                <svg width="8" height="8" viewBox="0 0 8 8">
-                  <path d="M1.5 1.5l5 5M6.5 1.5l-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
+      {hasAnyPills && (
+        <div className="poi-cat-pills">
+          {mainCategories?.map(({ id, label, color }) => {
+            const enabled = enabledCategories?.has(id)
+            return (
+              <button
+                key={`main:${id}`}
+                type="button"
+                className={`poi-cat-pill ${enabled ? 'enabled' : 'disabled'}`}
+                style={{
+                  borderColor: color,
+                  background: enabled ? color : color + '40',
+                  color: enabled ? '#fff' : color,
+                }}
+                onClick={() => onToggleCategory?.(id)}
+              >
+                {label}
+              </button>
+            )
+          })}
+
+          {activeTagList.map(tag => {
+            const color = tagColors[tag] || '#666'
+            const count = tagCounts[tag] ?? 0
+            const present = count > 0
+            const stateClass = present ? 'enabled' : 'disabled'
+            return (
+              <span
+                key={`tag:${tag}`}
+                className={`poi-cat-pill poi-cat-pill-tag ${stateClass}`}
+                style={{
+                  borderColor: color,
+                  background: present ? color : color + '40',
+                  color: present ? '#fff' : color,
+                }}
+              >
+                <span
+                  className="poi-cat-pill-text"
+                  onClick={(e) => handleTagTextClick(tag, e)}
+                >
+                  {tag}
+                </span>
+                <span
+                  className="poi-cat-pill-count"
+                  onClick={(e) => handleTagTextClick(tag, e)}
+                >
+                  {count}
+                </span>
+                <span
+                  className="poi-cat-pill-remove"
+                  onClick={(e) => handleRemoveTag(tag, e)}
+                  role="button"
+                  aria-label={`Remove ${tag}`}
+                >
+                  <svg width="8" height="8" viewBox="0 0 8 8">
+                    <path d="M1.5 1.5l5 5M6.5 1.5l-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                </span>
               </span>
-            </div>
-          ))}
-          {activeFilters.size >= 2 && (
-            <button className="poi-chip poi-chip-clear" onClick={onClearFilters}>
+            )
+          })}
+
+          {(activeFilters.size + (enabledCategories?.size ?? 0)) >= 2 && (
+            <button className="poi-cat-pill poi-cat-pill-clear" onClick={onClearFilters}>
               clear all
             </button>
           )}

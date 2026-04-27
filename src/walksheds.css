@@ -843,59 +843,6 @@ body,
   color: rgba(255, 255, 255, 0.3);
 }
 
-/* ── POI Filter Chips ── */
-
-.poi-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 6px;
-}
-
-.poi-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(8px);
-  font-family: inherit;
-  font-size: 11px;
-  font-weight: 500;
-  color: #333;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.poi-chip:hover {
-  background: rgba(0, 0, 0, 0.06);
-}
-
-.app.dark .poi-chip {
-  background: rgba(20, 20, 30, 0.85);
-  border-color: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.app.dark .poi-chip:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.poi-chip-text {
-  max-width: 120px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.poi-chip-count {
-  opacity: 0.5;
-  font-size: 10px;
-  font-weight: 400;
-}
-
 /* ── POI list under search chips ── */
 
 .poi-chip-poi-list {
@@ -957,17 +904,6 @@ body,
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.poi-chip-clear {
-  color: rgba(0, 0, 0, 0.4);
-  border-color: transparent;
-  background: transparent;
-  font-weight: 400;
-}
-
-.app.dark .poi-chip-clear {
-  color: rgba(255, 255, 255, 0.4);
 }
 
 /* ── POI Popup ── */
@@ -1127,19 +1063,20 @@ body,
   color: #5bb8f0;
 }
 
-/* ── POI category pills (sit above the search input) ── */
+/* ── POI category pills (sit under the search input) ── */
 
 .poi-cat-pills {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  padding: 6px 8px 4px;
+  margin-top: 6px;
 }
 
 .poi-cat-pill {
   display: inline-flex;
   align-items: center;
-  height: 20px;
+  gap: 4px;
+  height: 22px;
   padding: 0 8px;
   border-radius: 999px;
   border: 1px solid;
@@ -1151,16 +1088,87 @@ body,
   transition: opacity 0.1s, background 0.1s;
 }
 
-.poi-cat-pill.disabled {
-  opacity: 0.55;
-}
-
 .poi-cat-pill.disabled:hover {
-  opacity: 0.85;
+  filter: brightness(0.96);
 }
 
 .poi-cat-pill.enabled {
-  font-weight: 500;
+  font-weight: 600;
+}
+
+.poi-cat-pill.enabled:hover {
+  filter: brightness(1.06);
+}
+
+.poi-cat-pill-tag {
+  padding-right: 4px;
+}
+
+.poi-cat-pill-text {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.poi-cat-pill-count {
+  opacity: 0.6;
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.poi-cat-pill-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.08);
+  color: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.poi-cat-pill-remove:hover {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.poi-cat-pill.enabled .poi-cat-pill-remove {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.poi-cat-pill.enabled .poi-cat-pill-remove:hover {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.app.dark .poi-cat-pill-remove {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.app.dark .poi-cat-pill-remove:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.poi-cat-pill-clear {
+  border-color: transparent;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.4);
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.poi-cat-pill-clear:hover {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.app.dark .poi-cat-pill-clear {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.app.dark .poi-cat-pill-clear:hover {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* ── Legend: POI filter tags ── */

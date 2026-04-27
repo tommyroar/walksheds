@@ -82,29 +82,45 @@ export function filterByTags(features, activeTags) {
 }
 
 /**
- * Additive filter: a POI is visible if any of its tags is in an enabled
- * category OR any of its tags is in the active tag filters. With nothing
- * enabled and no active filters, returns an empty array (additive default).
+ * Additive filter: a POI is visible if it matches an enabled main category
+ * (by `properties.category` or by tag membership) OR if any of its tags is
+ * in the active tag filters. With nothing enabled and no active filters,
+ * returns an empty array (additive default).
  *
  * @param {Array} features - GeoJSON features
- * @param {Set<string>} enabledCategories - tag-category ids the user has activated
+ * @param {Set<string>} enabledMainIds - main-category ids the user has activated
  * @param {Set<string>} activeTags - explicit tag filters
- * @param {Object} [tagToCategory] - map from tag name → category id
+ * @param {Object} [mainCategoriesById] - map from id → { matchCategories[], matchTags[] }
  * @returns {Array} filtered features
  */
-export function filterByCategoriesOrTags(features, enabledCategories, activeTags, tagToCategory) {
-  const hasCats = enabledCategories && enabledCategories.size > 0
+export function filterByMainCategoriesAndTags(features, enabledMainIds, activeTags, mainCategoriesById) {
+  const hasMain = enabledMainIds && enabledMainIds.size > 0
   const hasTags = activeTags && activeTags.size > 0
-  if (!hasCats && !hasTags) return []
+  if (!hasMain && !hasTags) return []
+
+  const matchCats = new Set()
+  const matchMainTags = new Set()
+  if (hasMain && mainCategoriesById) {
+    for (const id of enabledMainIds) {
+      const cat = mainCategoriesById[id]
+      if (!cat) continue
+      for (const c of cat.matchCategories || []) matchCats.add(c)
+      for (const t of cat.matchTags || []) matchMainTags.add(t)
+    }
+  }
+
   return features.filter(f => {
-    const tags = f.properties?.tags
-    if (!Array.isArray(tags)) return false
-    if (hasCats && tagToCategory) {
-      for (const t of tags) {
-        if (enabledCategories.has(tagToCategory[t])) return true
+    const props = f.properties || {}
+    const tags = props.tags
+    if (hasMain) {
+      if (props.category && matchCats.has(props.category)) return true
+      if (Array.isArray(tags)) {
+        for (const t of tags) {
+          if (matchMainTags.has(t)) return true
+        }
       }
     }
-    if (hasTags) {
+    if (hasTags && Array.isArray(tags)) {
       for (const t of tags) {
         if (activeTags.has(t)) return true
       }
