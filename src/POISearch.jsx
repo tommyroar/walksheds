@@ -190,8 +190,8 @@ export default function POISearch({
                 className={`poi-cat-pill ${enabled ? 'enabled' : 'disabled'}`}
                 style={{
                   borderColor: color,
-                  background: enabled ? color + '40' : 'transparent',
-                  color: enabled ? color : color + '99',
+                  background: enabled ? color : color + '40',
+                  color: enabled ? '#fff' : color,
                 }}
                 onClick={() => onToggleCategory?.(id)}
               >
@@ -211,8 +211,8 @@ export default function POISearch({
                 className={`poi-cat-pill poi-cat-pill-tag ${stateClass}`}
                 style={{
                   borderColor: color,
-                  background: present ? color + '40' : 'transparent',
-                  color: present ? color : color + '99',
+                  background: present ? color : color + '40',
+                  color: present ? '#fff' : color,
                 }}
               >
                 <span

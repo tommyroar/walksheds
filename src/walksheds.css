@@ -1088,16 +1088,16 @@ body,
   transition: opacity 0.1s, background 0.1s;
 }
 
-.poi-cat-pill.disabled {
-  opacity: 0.55;
-}
-
 .poi-cat-pill.disabled:hover {
-  opacity: 0.85;
+  filter: brightness(0.96);
 }
 
 .poi-cat-pill.enabled {
-  font-weight: 500;
+  font-weight: 600;
+}
+
+.poi-cat-pill.enabled:hover {
+  filter: brightness(1.06);
 }
 
 .poi-cat-pill-tag {
@@ -1133,6 +1133,14 @@ body,
 
 .poi-cat-pill-remove:hover {
   background: rgba(0, 0, 0, 0.18);
+}
+
+.poi-cat-pill.enabled .poi-cat-pill-remove {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.poi-cat-pill.enabled .poi-cat-pill-remove:hover {
+  background: rgba(255, 255, 255, 0.45);
 }
 
 .app.dark .poi-cat-pill-remove {
