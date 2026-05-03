@@ -76,4 +76,37 @@ export const POI_FILES = [
   'lodging', 'shopping', 'healthcare', 'services', 'fitness',
 ]
 
+// Always-visible main category toggles. Each pill matches POIs by raw OSM
+// `properties.category` value and/or by `properties.tags` membership.
+export const MAIN_POI_CATEGORIES = [
+  {
+    id: 'restaurants',
+    label: 'restaurants',
+    color: '#E67E22',
+    matchCategories: ['restaurant', 'fast_food', 'ice_cream', 'bakery'],
+    matchTags: [],
+  },
+  {
+    id: 'bars',
+    label: 'bars',
+    color: '#9B59B6',
+    matchCategories: ['bar', 'pub'],
+    matchTags: ['brewery', 'winery', 'distillery', 'has-bar'],
+  },
+  {
+    id: 'coffee',
+    label: 'coffee',
+    color: '#7B4A2A',
+    matchCategories: ['cafe'],
+    matchTags: ['coffee', 'coffee-shop', 'coffee-roaster'],
+  },
+  {
+    id: 'parks',
+    label: 'parks',
+    color: '#2ECC71',
+    matchCategories: ['park', 'playground', 'garden'],
+    matchTags: [],
+  },
+]
+
 export const POI_INTERACTIVE_LAYERS = ['poi-circles']

@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { buildGraph, isJunction, getJunctionHints } from './routeGraph'
 import { fetchWalkshed, getLargestEnabledBounds } from './mapbox'
-import { WALKSHED_OPTIONS, LINE_COLORS, WALKSHED_ACCENT_LIGHT, WALKSHED_ACCENT_DARK, SEATTLE_CENTER, SEATTLE_ZOOM, POI_FILES } from './constants'
+import { WALKSHED_OPTIONS, LINE_COLORS, WALKSHED_ACCENT_LIGHT, WALKSHED_ACCENT_DARK, SEATTLE_CENTER, SEATTLE_ZOOM, POI_FILES, MAIN_POI_CATEGORIES } from './constants'
 import { parseStationPath, buildStationPath, findStationByCode, parseWalkshedParams, buildWalkshedParams } from './deepLink'
-import { filterPOIsInWalkshed, filterByCategoriesOrTags, getAvailableTags, mergeFeatureCollections } from './poiUtils'
+import { filterPOIsInWalkshed, filterByMainCategoriesAndTags, getAvailableTags, mergeFeatureCollections } from './poiUtils'
 import { useNavigation } from './useNavigation'
 import MapView from './MapView'
 import LineLegend from './LineLegend'
@@ -233,15 +233,21 @@ export default function Walksheds() {
     [walkshedPois, tagColors],
   )
 
+  const mainCategoriesById = useMemo(() => {
+    const out = {}
+    for (const c of MAIN_POI_CATEGORIES) out[c.id] = c
+    return out
+  }, [])
+
   const visiblePois = useMemo(() => {
-    const filtered = filterByCategoriesOrTags(
+    const filtered = filterByMainCategoriesAndTags(
       walkshedPois.features,
       enabledCategories,
       poiFilters,
-      tagCategories?.tag_to_category,
+      mainCategoriesById,
     )
     return { type: 'FeatureCollection', features: filtered }
-  }, [walkshedPois, enabledCategories, poiFilters, tagCategories])
+  }, [walkshedPois, enabledCategories, poiFilters, mainCategoriesById])
 
   const handleToggleCategory = useCallback((catId) => {
     setEnabledCategories(prev => {
@@ -275,6 +281,7 @@ export default function Walksheds() {
 
   const handleClearPoiFilters = useCallback(() => {
     setPoiFilters(new Set())
+    setEnabledCategories(new Set())
     fitToWalkshed()
   }, [fitToWalkshed])
 
@@ -405,7 +412,7 @@ export default function Walksheds() {
           onRemoveFilter={handleRemovePoiFilter}
           onClearFilters={handleClearPoiFilters}
           onPoiSelect={handlePoiSelect}
-          tagCategories={tagCategories}
+          mainCategories={MAIN_POI_CATEGORIES}
           enabledCategories={enabledCategories}
           onToggleCategory={handleToggleCategory}
         />
