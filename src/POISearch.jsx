@@ -46,13 +46,23 @@ export default function POISearch({
     items[poiHighlightIdx]?.scrollIntoView({ block: 'nearest' })
   }, [poiHighlightIdx])
 
+  const claimedTags = useMemo(() => {
+    const out = new Set()
+    for (const c of mainCategories || []) {
+      if (c.id) out.add(c.id)
+      for (const t of c.matchCategories || []) out.add(t)
+      for (const t of c.matchTags || []) out.add(t)
+    }
+    return out
+  }, [mainCategories])
+
   const matches = useMemo(() => {
-    const filtered = availableTags.filter(({ tag }) => !activeFilters.has(tag))
+    const filtered = availableTags.filter(({ tag }) => !activeFilters.has(tag) && !claimedTags.has(tag))
     if (!query.trim()) return filtered.slice(0, 8)
     return filtered
       .filter(({ tag }) => tag.includes(query.trim().toLowerCase()))
       .slice(0, 8)
-  }, [query, availableTags, activeFilters])
+  }, [query, availableTags, activeFilters, claimedTags])
 
   const handleSelect = useCallback((tag) => {
     onAddFilter(tag)
