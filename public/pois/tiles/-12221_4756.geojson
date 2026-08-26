@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"id": "6ea314d6-e7aa-4843-834d-8888aee7a08b", "name": "Camp Richter", "category": "fitness_centre", "tags": ["fitness-centre", "gym"], "sources": ["overture"], "address": "4452 Ferncroft Rd"}, "geometry": {"type": "Point", "coordinates": [-122.208725, 47.5657158]}}]}

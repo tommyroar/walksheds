@@ -1,0 +1,1 @@
+{"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"id": "3413f740-59ac-475d-9fb1-9833ee252e22", "name": "FedEx Express SEAR Facility", "category": "restaurant", "tags": ["restaurant"], "sources": ["overture"], "website": "http://www.fedex.com/", "address": "2450 S 161st St"}, "geometry": {"type": "Point", "coordinates": [-122.3008041, 47.4591522]}}]}

@@ -38,7 +38,7 @@ from fetch_pois import (
     load_station_index,
 )
 
-RELEASE = "2026-04-15.0"
+RELEASE = "2026-08-19.0"
 PLACES_GLOB = f"s3://overturemaps-us-west-2/release/{RELEASE}/theme=places/type=place/*"
 
 # Which output file each frontend category lands in (mirrors POI_FILES + constants.js).
